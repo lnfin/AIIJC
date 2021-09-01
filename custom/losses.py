@@ -1,6 +1,5 @@
 from torch import nn
 
-
 class IoULoss(nn.Module):
     def __init__(self, weight=None, size_average=True):
         super(IoULoss, self).__init__()

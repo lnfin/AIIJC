@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import os, sys
 import matplotlib.pyplot as plt
-from custom import metrics, losses
+from custom import metrics, losses, models
 
 
 def fullseed(seed=0xD153A53):
@@ -22,12 +22,14 @@ def get_metric(cfg):
 
 
 def get_lossfn(cfg):
-    return getattr(sys.modules['custom.losses'], cfg.loss)
+    return getattr(sys.modules['custom.losses'], cfg.loss_fn)
 
 
 def get_model(cfg):
-    if cfg.model.startswith('/custom/'):
-        model = getattr(sys.modules['custom.model'], cfg.model[8:])(resnet=cfg.backbone) # поменять параметры
+    if cfg.model == 'DeepLabV3':
+        model = getattr(sys.modules['custom.models'], cfg.model)(in_channels=cfg.deeplab_inchannels,
+                                                                 resnet=cfg.deeplab_backbone)
+
     return model
 
 
