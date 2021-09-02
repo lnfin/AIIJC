@@ -1,6 +1,6 @@
 import torch
 import os
-from utils import get_scheduler, get_model, get_lossfn, get_optimizer, get_metric, \
+from utils import get_scheduler, get_model, get_loss_function, get_optimizer, get_metric, \
     show_segmentation
 from data_functions import get_loaders
 
@@ -43,6 +43,7 @@ def eval_epoch(model, val_dl, criterion, metric, device):
             score_sum += score
     return loss_sum / len(val_dl), score_sum / len(val_dl)
 
+
 '''
 def train(model, train_dl, val_dl, criterion, metric, optimizer, scheduler, epochs, save_folder='checkpoints',
           save_name='model', device=None, n_lungs_to_visual=0):
@@ -66,6 +67,7 @@ def train(model, train_dl, val_dl, criterion, metric, optimizer, scheduler, epoc
     model.load_state_dict(best_state_dict)
 '''
 
+
 def run(cfg):
     torch.cuda.empty_cache()
 
@@ -75,27 +77,22 @@ def run(cfg):
     # нужно сделать
     model = get_model(cfg)
     optimizer = get_optimizer(cfg)
-    criterion = get_lossfn(cfg)
+    criterion = get_loss_function(cfg)
     scheduler = get_scheduler(cfg)
 
     metric = get_metric(cfg)
 
-    trainlosses, vallosses = [], []
-    trainmetrics, valmetrics = [], []
+    train_losses, val_losses = [], []
+    train_metric, val_metric = [], []
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     for epoch in range(1, cfg.epochs + 1):
         print(f'Epoch #{epoch}')
 
         train_loss, train_score = train_epoch(model, train_loader, criterion, metric, optimizer, scheduler, device)
-        trainlosses.append(train_loss)
-        trainmetrics.append(train_score)
+        train_losses.append(train_loss)
+        train_metric.append(train_score)
 
         val_loss, val_score = eval_epoch(model, train_loader, criterion, metric, device)
-        vallosses.append(val_loss)
-        valmetrics.append(val_score)
-
-
-
-
-
+        val_losses.append(val_loss)
+        val_metric.append(val_score)

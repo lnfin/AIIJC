@@ -1,3 +1,4 @@
+import torch
 from config import Cfg
 from torch import nn
 from torchvision import models

@@ -1,11 +1,12 @@
 import numpy as np
 import torch
-import os, sys
+import os
+import sys
 import matplotlib.pyplot as plt
 from custom import metrics, losses, models
 
 
-def fullseed(seed=0xD153A53):
+def set_seed(seed=0xD153A53):
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
@@ -21,8 +22,8 @@ def get_metric(cfg):
     return getattr(sys.modules['custom.metrics'], cfg.metric)
 
 
-def get_lossfn(cfg):
-    return getattr(sys.modules['custom.losses'], cfg.loss_fn)
+def get_loss_function(cfg):
+    return getattr(sys.modules['custom.losses'], cfg.loss_function)
 
 
 def get_model(cfg):

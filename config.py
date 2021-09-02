@@ -8,7 +8,6 @@ class Cfg:
     deeplab_backbone = 50  # 50, 101
     deeplab_pretrained = True
 
-
     # TRAIN AND EVAL SETTINGS
     lr = 1e-4
     epochs = 20
@@ -19,7 +18,7 @@ class Cfg:
     # CUSTOM
     metric = 'IoUScore'
 
-    loss_fn = 'IoULoss'
+    loss_function = 'IoULoss'
     optimizer = 'Adam'
     # scheduler = 'OneCycleLR'
 

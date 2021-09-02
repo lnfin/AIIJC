@@ -1,7 +1,7 @@
 from config import Cfg
-from utils import fullseed
+from utils import set_seed
 from train_functions import run
 
-fullseed(Cfg.seed)
+set_seed(Cfg.seed)
 
 run(Cfg)
