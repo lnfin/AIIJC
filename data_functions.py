@@ -32,13 +32,12 @@ class Covid19Dataset(Dataset):
 
 def data_generator(cfg):
     image_paths = get_paths(cfg)
+    train_paths, val_paths = [], []
 
     if not cfg.kfold:
         _train_paths, _val_paths = train_test_split(image_paths, test_size=cfg.test_size, random_state=cfg.seed)
-        train_paths = []
         for paths in _train_paths:
             train_paths.extend(paths)
-        val_paths = []
         for paths in _val_paths:
             val_paths.extend(paths)
         return train_paths, val_paths
