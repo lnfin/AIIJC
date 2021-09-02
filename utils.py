@@ -44,7 +44,15 @@ def get_scheduler(cfg):
 
 def get_paths(cfg):
     paths_folder = os.path.join(cfg.root_folder, cfg.data_folder, cfg.dataset_name)
-    paths = np.array([os.path.join(paths_folder, x) for x in os.listdir(paths_folder)])
+    last_number = 0
+    paths, _paths = [], []
+    for name in sorted(os.listdir(paths_folder)):
+        path = os.path.join(paths_folder, name)
+        number_of_patient = int(name.split('_')[0])
+        if last_number != number_of_patient:
+            paths.append(_paths)
+            _paths = []
+        _paths.append(path)
     return paths
 
 
