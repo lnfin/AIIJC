@@ -52,6 +52,7 @@ def get_paths(cfg):
         if last_number != number_of_patient:
             paths.append(_paths)
             _paths = []
+            last_number = number_of_patient
         _paths.append(path)
     return paths
 
