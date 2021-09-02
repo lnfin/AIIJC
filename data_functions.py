@@ -30,40 +30,46 @@ class Covid19Dataset(Dataset):
         return image, mask
 
 
-def datagenerator(cfg):
+def data_generator(cfg):
     image_paths = get_paths(cfg)
 
     if not cfg.kfold:
-        train_paths, val_paths = train_test_split(image_paths, test_size=cfg.test_size, random_state=cfg.seed)
-    else:
-        kf = KFold(n_splits=cfg.n_splits)
-        for i, (train_index, val_index) in enumerate(kf.split(image_paths)):
-            if i + 1 == cfg.fold_number:
-                train_paths = image_paths[train_index]
-                val_paths = image_paths[val_index]
+        _train_paths, _val_paths = train_test_split(image_paths, test_size=cfg.test_size, random_state=cfg.seed)
+        train_paths = []
+        for paths in _train_paths:
+            train_paths.extend(paths)
+        val_paths = []
+        for paths in _val_paths:
+            val_paths.extend(paths)
+        return train_paths, val_paths
 
+    kf = KFold(n_splits=cfg.n_splits)
+    for i, (train_index, val_index) in enumerate(kf.split(image_paths)):
+        if i + 1 == cfg.fold_number:
+            train_paths = image_paths[train_index]
+            val_paths = image_paths[val_index]
     return train_paths, val_paths
 
 
 def get_transforms(cfg):
-    pretransforms = [getattr(A, item["name"])(**item["params"]) for item in cfg.pretransforms]
+    pre_transforms = [getattr(A, item["name"])(**item["params"]) for item in cfg.pretransforms]
     augmentations = [getattr(A, item["name"])(**item["params"]) for item in cfg.augmentations]
-    posttransforms = [getattr(A, item["name"])(**item["params"]) for item in cfg.posttransforms]
+    post_transforms = [getattr(A, item["name"])(**item["params"]) for item in cfg.posttransforms]
 
-    print(pretransforms)
+    print(pre_transforms)
     print(augmentations)
-    train = A.Compose(pretransforms + augmentations + posttransforms)
-    test = A.Compose(pretransforms + posttransforms)
+    train = A.Compose(pre_transforms + augmentations + post_transforms)
+    test = A.Compose(pre_transforms + post_transforms)
     return train, test
 
 
 def get_loaders(cfg):
-    trainforms, testforms = get_transforms(cfg)
+    train_transforms, test_transforms = get_transforms(cfg)
 
-    train_paths, val_paths = datagenerator(cfg)
+    train_paths, val_paths = data_generator(cfg)
 
-    train_ds = Covid19Dataset(train_paths, transform=trainforms)
-    val_ds = Covid19Dataset(val_paths, transform=trainforms)
+    train_ds = Covid19Dataset(train_paths, transform=train_transforms)
+    val_ds = Covid19Dataset(val_paths, transform=train_transforms)
 
     train_dl = DataLoader(train_ds, batch_size=cfg.train_batchsize, drop_last=False)
     val_dl = DataLoader(val_ds, batch_size=cfg.val_batchsize, drop_last=False)
