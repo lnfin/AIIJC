@@ -77,8 +77,8 @@ def run(cfg):
 
     model = get_model(cfg)(cfg=cfg).to(device)
 
-    optimizer = get_optimizer(cfg)(**cfg.optimizer_params)
-    scheduler = get_scheduler(cfg)(**cfg.scheduler_params)
+    optimizer = get_optimizer(cfg)(model.parameters(), **cfg.optimizer_params)
+    scheduler = get_scheduler(cfg)(optimizer, **cfg.scheduler_params)
 
     metric = get_metric(cfg)(**cfg.metric_params)
     criterion = get_criterion(cfg)(**cfg.criterion_params)
