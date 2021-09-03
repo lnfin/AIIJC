@@ -56,20 +56,18 @@ def get_model(cfg):
     :return: model
     """
     pocket, name = cfg.model.split('/')
-    model = None
-    if pocket == 'custom':
-        model = getattr(sys.modules['custom.models'], name)(cfg=cfg)
-    if pocket == 'torchvision':
-        model = getattr(sys.modules['torchvision.models.segmentation'], name)
+    model = getattr(sys.modules['custom.models'], name)(cfg=cfg)
     return model
 
 
 def get_optimizer(cfg):
-    return
+    optimizer = getattr(sys.modules['torch.nn.optim'], cfg.optimizer)(cfg=cfg)
+    return optimizer
 
 
 def get_scheduler(cfg):
-    return
+    scheduler = getattr(sys.modules['torch.nn.optim.lr_scheduler'], cfg.scheduler)(cfg=cfg)
+    return scheduler
 
 
 def get_paths(cfg):

@@ -1,3 +1,5 @@
+import random
+
 import torch
 from torch.utils.data import Dataset, DataLoader
 import numpy as np
@@ -35,11 +37,13 @@ def data_generator(cfg):
     train_paths, val_paths = [], []
 
     if not cfg.kfold:
-        _train_paths, _val_paths = train_test_split(image_paths, test_size=cfg.test_size, random_state=cfg.seed)
+        _train_paths, _val_paths = train_test_split(image_paths, test_size=cfg.val_size, random_state=cfg.seed)
         for paths in _train_paths:
             train_paths.extend(paths)
         for paths in _val_paths:
             val_paths.extend(paths)
+        random.shuffle(train_paths)
+        random.shuffle(val_paths)
         return train_paths, val_paths
 
     kf = KFold(n_splits=cfg.n_splits)
@@ -47,6 +51,8 @@ def data_generator(cfg):
         if i + 1 == cfg.fold_number:
             train_paths = image_paths[train_index]
             val_paths = image_paths[val_index]
+    random.shuffle(train_paths)
+    random.shuffle(val_paths)
     return train_paths, val_paths
 
 
