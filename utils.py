@@ -27,10 +27,10 @@ def get_loss_function(cfg):
 
 
 def get_model(cfg):
-    if cfg.model == 'DeepLabV3':
-        model = getattr(sys.modules['custom.models'], cfg.model)(in_channels=cfg.deeplab_inchannels,
-                                                                 resnet=cfg.deeplab_backbone)
-
+    pocket, name = cfg.model.split('/')
+    model = None
+    if pocket == 'custom':
+        model = getattr(sys.modules['custom.models'], name)(cfg=cfg)
     return model
 
 

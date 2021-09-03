@@ -1,38 +1,38 @@
 import torch
 from config import Cfg
 from torch import nn
+import sys
 from torchvision import models
 
 
 class DeepLabV3(nn.Module):
-    def __init__(self, in_channels=1, output_channels=2, resnet=101):
+    base_name = 'deeplabv3_'
+
+    def __init__(self, cfg):
         super().__init__()
-        self.cfg = Cfg
-        self.before_layer = nn.Sequential(nn.Conv2d(in_channels, 3, 1),
+        self.cfg = cfg
+        self.before_layer = nn.Sequential(nn.Conv2d(self.cfg.in_channels, 3, 1),
                                           nn.BatchNorm2d(3),
                                           nn.ReLU())
-        if resnet == 101:
-            self.model = models.segmentation.deeplabv3_resnet101(
-                pretrained=self.cfg.deeplab_pretrained, progress=True
-            )
-        elif resnet == 50:
-            self.model = models.segmentation.deeplabv3_resnet50(
-                pretrained=self.cfg.deeplab_pretrained, progress=True
-            )
-        self.model.classifier[-1] = nn.Conv2d(256, output_channels, 1)
 
-    def forward(self, X):
-        if X.shape[1] != 3:
-            X = self.before_layer(X)
-        return torch.sigmoid(self.model(X)['out'])
+        name = self.base_name + self.cfg.backbone
+        self.model = getattr(sys.modules['models.segmentation'], name)(
+            pretrained=self.cfg.pretrained, progress=True
+        )
+        self.model.classifier[-1] = nn.Conv2d(256, self.cfg.output_channels, 1)
+
+    def forward(self, x):
+        if x.shape[1] != 3:
+            x = self.before_layer(x)
+        return torch.sigmoid(self.model(x)['out'])
 
 
 class UNet(nn.Module):
-    def __init__(self, input_channels=1, output_channels=2):
+    def __init__(self, cfg):
         super().__init__()
-        self.cfg = Cfg
+        self.cfg = cfg
         self.enc_conv0 = nn.Sequential(
-            nn.Conv2d(input_channels, 64, 3, padding=1),
+            nn.Conv2d(self.cfg.in_channels, 64, 3, padding=1),
             nn.BatchNorm2d(64),
             nn.ReLU(),
             nn.Conv2d(64, 64, 3, padding=1),
@@ -116,7 +116,7 @@ class UNet(nn.Module):
             nn.Conv2d(64, 64, 3, padding=1),
             nn.BatchNorm2d(64),
             nn.ReLU(),
-            nn.Conv2d(64, output_channels, 1)
+            nn.Conv2d(64, self.cfg.output_channels, 1)
         )
 
     def forward(self, x):
