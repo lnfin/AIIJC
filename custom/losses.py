@@ -1,4 +1,5 @@
 from torch import nn
+from torch.nn import BCELoss
 
 
 class IoULoss(nn.Module):
