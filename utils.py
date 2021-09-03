@@ -77,7 +77,7 @@ def get_paths(cfg):
     :param cfg: Config
     :return: paths [patient[slice, ...], ...]
     """
-    paths_folder = os.path.join(cfg.root_folder, cfg.data_folder, cfg.dataset_name)
+    paths_folder = os.path.join(cfg.data_folder, cfg.dataset_name)
     last_number = 0
     paths, _paths = [], []
     for name in sorted(os.listdir(paths_folder)):
