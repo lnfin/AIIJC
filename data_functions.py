@@ -51,9 +51,9 @@ def data_generator(cfg):
 
 
 def get_transforms(cfg):
-    pre_transforms = [getattr(A, item["name"])(**item["params"]) for item in cfg.pretransforms]
+    pre_transforms = [getattr(A, item["name"])(**item["params"]) for item in cfg.pre_transforms]
     augmentations = [getattr(A, item["name"])(**item["params"]) for item in cfg.augmentations]
-    post_transforms = [getattr(A, item["name"])(**item["params"]) for item in cfg.posttransforms]
+    post_transforms = [getattr(A, item["name"])(**item["params"]) for item in cfg.post_transforms]
 
     print(pre_transforms)
     print(augmentations)

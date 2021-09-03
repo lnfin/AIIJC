@@ -31,7 +31,7 @@ class Cfg:
     custom_folder = 'custom/'
 
     # AUGMENTATIONS AND TRANSFORMS
-    pretransforms = [  # Pre-transforms
+    pre_transforms = [  # Pre-transforms
         dict(
             name="Resize",
             params=dict(
@@ -50,7 +50,7 @@ class Cfg:
             )
         )]
 
-    posttransforms = [  # Post-transforms
+    post_transforms = [  # Post-transforms
         dict(
             name="Normalize",
             params=dict(
