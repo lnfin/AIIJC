@@ -42,7 +42,7 @@ def get_criterion(cfg):
     :param cfg: Config
     :return: loss_function
     """
-    return getattr(sys.modules['custom.losses'], cfg.loss_function)
+    return getattr(sys.modules['custom.losses'], cfg.criterion)
 
 
 def get_model(cfg):
