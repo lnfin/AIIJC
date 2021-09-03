@@ -75,7 +75,7 @@ def get_loaders(cfg):
 
     train_ds = Covid19Dataset(train_paths, transform=train_transforms)
     val_ds = Covid19Dataset(val_paths, transform=train_transforms)
-
-    train_dl = DataLoader(train_ds, batch_size=cfg.train_batchsize, drop_last=False)
-    val_dl = DataLoader(val_ds, batch_size=cfg.val_batchsize, drop_last=False)
+b
+    train_dl = DataLoader(train_ds, batch_size=cfg.batch_size, drop_last=False)
+    val_dl = DataLoader(val_ds, batch_size=cfg.batch_size, drop_last=False)
     return train_dl, val_dl
