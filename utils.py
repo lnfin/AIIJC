@@ -47,8 +47,7 @@ def get_criterion(cfg):
 
 def get_model(cfg):
     """
-    Uses: cfg.model - pocket_name/model_name
-    pocket_names: custom, torchvision
+    cfg.model
 
     :param cfg: Config
     :return: model
@@ -59,12 +58,12 @@ def get_model(cfg):
 
 
 def get_optimizer(cfg):
-    optimizer = getattr(sys.modules['torch.nn.optim'], cfg.optimizer)
+    optimizer = getattr(sys.modules['torch.optim'], cfg.optimizer)
     return optimizer
 
 
 def get_scheduler(cfg):
-    scheduler = getattr(sys.modules['torch.nn.optim.lr_scheduler'], cfg.scheduler)
+    scheduler = getattr(sys.modules['torch.optim.lr_scheduler'], cfg.scheduler)
     return scheduler
 
 
