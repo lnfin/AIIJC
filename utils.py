@@ -53,7 +53,7 @@ def get_model(cfg):
     :param cfg: Config
     :return: model
     """
-    pocket, name = cfg.model.split('/')
+    name = cfg.model
     model = getattr(sys.modules['custom.models'], name)
     return model
 
