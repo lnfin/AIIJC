@@ -92,7 +92,9 @@ def run(cfg):
         train_loss, train_score = train_epoch(model, train_loader, criterion, metric, optimizer, scheduler, device)
         train_losses.append(train_loss)
         train_metric.append(train_score)
+        print(train_score, train_loss)
 
         val_loss, val_score = eval_epoch(model, train_loader, criterion, metric, device)
         val_losses.append(val_loss)
         val_metric.append(val_score)
+        print(val_score, val_loss)
