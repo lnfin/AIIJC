@@ -83,18 +83,21 @@ def run(cfg):
     metric = get_metric(cfg)(**cfg.metric_params)
     criterion = get_criterion(cfg)(**cfg.criterion_params)
 
-    train_losses, val_losses = [], []
-    train_metric, val_metric = [], []
-
+    last_loss = 999
+    best_state_dict = model.state_dict()
     for epoch in range(1, cfg.epochs + 1):
         print(f'Epoch #{epoch}')
 
         train_loss, train_score = train_epoch(model, train_loader, criterion, metric, optimizer, scheduler, device)
-        train_losses.append(train_loss)
-        train_metric.append(train_score)
         print(train_score, train_loss)
 
         val_loss, val_score = eval_epoch(model, train_loader, criterion, metric, device)
-        val_losses.append(val_loss)
-        val_metric.append(val_score)
         print(val_score, val_loss)
+
+        if val_loss < last_loss:
+            last_loss = val_loss
+            best_state_dict = model.state_dict()
+            torch.save(best_state_dict, os.path.join('checkponts', 'new') + '.pth')
+
+    model.load_state_dict(best_state_dict)
+    return model
