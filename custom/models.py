@@ -16,7 +16,7 @@ class DeepLabV3(nn.Module):
                                           nn.ReLU())
 
         name = self.base_name + self.cfg.backbone
-        self.model = getattr(sys.modules['models.segmentation'], name)(
+        self.model = getattr(sys.modules['torchvision.models.segmentation'], name)(
             pretrained=self.cfg.pretrained, progress=True
         )
         self.model.classifier[-1] = nn.Conv2d(256, self.cfg.output_channels, 1)

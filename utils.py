@@ -4,9 +4,16 @@ import os
 import sys
 import matplotlib.pyplot as plt
 from custom import metrics, losses, models
+from torchvision import models
 
 
 def set_seed(seed=0xD153A53):
+    """
+    Sets seed of all modules
+
+    :param seed: seed
+    :return: None
+    """
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
@@ -19,18 +26,41 @@ def discretize_segmentation_maps(probs, threshold=0.5):
 
 
 def get_metric(cfg):
+    """
+    cfg.metric should be like: pocket_name/metric_name,
+    pocket_names: custom, torchvision
+
+    :param cfg: Config
+    :return: metric
+    """
     return getattr(sys.modules['custom.metrics'], cfg.metric)
 
 
 def get_loss_function(cfg):
+    """
+    Uses: cfg.loss_function - pocket_name/loss_function_name
+    pocket_names: custom, torchvision
+
+    :param cfg: Config
+    :return: loss_function
+    """
     return getattr(sys.modules['custom.losses'], cfg.loss_function)
 
 
 def get_model(cfg):
+    """
+    Uses: cfg.model - pocket_name/model_name
+    pocket_names: custom, torchvision
+
+    :param cfg: Config
+    :return: model
+    """
     pocket, name = cfg.model.split('/')
     model = None
     if pocket == 'custom':
         model = getattr(sys.modules['custom.models'], name)(cfg=cfg)
+    if pocket == 'torchvision':
+        model = getattr(sys.modules['torchvision.models.segmentation'], name)
     return model
 
 
@@ -43,6 +73,10 @@ def get_scheduler(cfg):
 
 
 def get_paths(cfg):
+    """
+    :param cfg: Config
+    :return: paths [patient[slice, ...], ...]
+    """
     paths_folder = os.path.join(cfg.root_folder, cfg.data_folder, cfg.dataset_name)
     last_number = 0
     paths, _paths = [], []
