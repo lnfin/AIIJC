@@ -1,6 +1,6 @@
 import torch
 import os
-from utils import get_scheduler, get_model, get_loss_function, get_optimizer, get_metric, \
+from utils import get_scheduler, get_model, get_criterion, get_optimizer, get_metric, \
     show_segmentation
 from data_functions import get_loaders
 
@@ -72,19 +72,19 @@ def run(cfg):
     torch.cuda.empty_cache()
 
     train_loader, val_loader = get_loaders(cfg)
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(device)
 
-    print(len(train_loader))
-    # нужно сделать
-    model = get_model(cfg)
-    optimizer = get_optimizer(cfg)
-    criterion = get_loss_function(cfg)
-    scheduler = get_scheduler(cfg)
+    model = get_model(cfg)(cfg=cfg).to(device)
 
-    metric = get_metric(cfg)
+    optimizer = get_optimizer(cfg)(**cfg.optimizer_params)
+    scheduler = get_scheduler(cfg)(**cfg.scheduler_params)
+
+    metric = get_metric(cfg)(**cfg.metric_params)
+    criterion = get_criterion(cfg)(**cfg.criterion_params)
 
     train_losses, val_losses = [], []
     train_metric, val_metric = [], []
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     for epoch in range(1, cfg.epochs + 1):
         print(f'Epoch #{epoch}')

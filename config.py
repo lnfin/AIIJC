@@ -4,9 +4,9 @@ class Cfg:
     # DeepLabV3
     model = 'DeepLabV3'
 
-    deeplab_inchannels = 1
-    deeplab_backbone = 50  # 50, 101
-    deeplab_pretrained = True
+    in_channels = 1
+    backbone = 50  # 50, 101
+    pretrained = True
 
     # TRAIN AND EVAL SETTINGS
     lr = 1e-4
@@ -18,7 +18,7 @@ class Cfg:
     # CUSTOM
     metric = 'IoUScore'
 
-    loss_function = 'IoULoss'
+    criterion = 'IoULoss'
     optimizer = 'Adam'
     # scheduler = 'OneCycleLR'
 

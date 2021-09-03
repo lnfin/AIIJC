@@ -27,8 +27,7 @@ def discretize_segmentation_maps(probs, threshold=0.5):
 
 def get_metric(cfg):
     """
-    cfg.metric should be like: pocket_name/metric_name,
-    pocket_names: custom, torchvision
+    cfg.metric
 
     :param cfg: Config
     :return: metric
@@ -36,10 +35,9 @@ def get_metric(cfg):
     return getattr(sys.modules['custom.metrics'], cfg.metric)
 
 
-def get_loss_function(cfg):
+def get_criterion(cfg):
     """
-    Uses: cfg.loss_function - pocket_name/loss_function_name
-    pocket_names: custom, torchvision
+    cfg.criterion
 
     :param cfg: Config
     :return: loss_function
@@ -56,17 +54,17 @@ def get_model(cfg):
     :return: model
     """
     pocket, name = cfg.model.split('/')
-    model = getattr(sys.modules['custom.models'], name)(cfg=cfg)
+    model = getattr(sys.modules['custom.models'], name)
     return model
 
 
 def get_optimizer(cfg):
-    optimizer = getattr(sys.modules['torch.nn.optim'], cfg.optimizer)(cfg=cfg)
+    optimizer = getattr(sys.modules['torch.nn.optim'], cfg.optimizer)
     return optimizer
 
 
 def get_scheduler(cfg):
-    scheduler = getattr(sys.modules['torch.nn.optim.lr_scheduler'], cfg.scheduler)(cfg=cfg)
+    scheduler = getattr(sys.modules['torch.nn.optim.lr_scheduler'], cfg.scheduler)
     return scheduler
 
 
