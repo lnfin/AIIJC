@@ -97,7 +97,7 @@ def run(cfg):
         if val_loss < last_loss:
             last_loss = val_loss
             best_state_dict = model.state_dict()
-            torch.save(best_state_dict, os.path.join('checkponts', 'new') + '.pth')
+            torch.save(best_state_dict, os.path.join('checkpoints', 'new') + '.pth')
 
     model.load_state_dict(best_state_dict)
     return model
