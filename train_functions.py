@@ -91,14 +91,14 @@ def run(cfg):
         print(f'Epoch #{epoch}')
 
         train_loss, train_score = train_epoch(model, train_loader, criterion, metric, optimizer, scheduler, device)
-        print(train_score.cpu()[0], train_loss)
+        print(train_score.item(), train_loss)
 
         val_loss, val_score = eval_epoch(model, train_loader, criterion, metric, device)
-        print(val_score.cpu()[0], val_loss)
+        print(val_score.item(), val_loss)
 
-        metrics = {'train_score': train_score.cpu()[0],
+        metrics = {'train_score': train_score.item(),
                    'train_loss': train_loss,
-                   'val_score': val_score.cpu()[0],
+                   'val_score': val_score.item(),
                    'val_loss': val_loss,
                    'lr': scheduler.get_last_lr()}
 
