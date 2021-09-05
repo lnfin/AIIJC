@@ -1,8 +1,8 @@
 import torch
 import os
-from utils import get_scheduler, get_model, get_criterion, get_optimizer, get_metric, \
-    show_segmentation
+from utils import get_scheduler, get_model, get_criterion, get_optimizer, get_metric
 from data_functions import get_loaders
+import wandb
 
 
 def train_epoch(model, train_dl, criterion, metric, optimizer, scheduler, device):
@@ -76,6 +76,8 @@ def run(cfg):
     print(device)
 
     model = get_model(cfg)(cfg=cfg).to(device)
+    wandb.init(project='Covid19_CT_segmentation', config=cfg, name=cfg.model)
+    wandb.watch(model, log_freq=100)
 
     optimizer = get_optimizer(cfg)(model.parameters(), **cfg.optimizer_params)
     scheduler = get_scheduler(cfg)(optimizer, **cfg.scheduler_params)
@@ -89,15 +91,23 @@ def run(cfg):
         print(f'Epoch #{epoch}')
 
         train_loss, train_score = train_epoch(model, train_loader, criterion, metric, optimizer, scheduler, device)
-        print(train_score, train_loss)
+        print(train_score.cpu()[0], train_loss)
 
         val_loss, val_score = eval_epoch(model, train_loader, criterion, metric, device)
-        print(val_score, val_loss)
+        print(val_score.cpu()[0], val_loss)
 
+        metrics = {'train_score': train_score.cpu()[0],
+                   'train_loss': train_loss,
+                   'val_score': val_score.cpu()[0],
+                   'val_loss': val_loss,
+                   'lr': scheduler.get_last_lr()}
+
+        wandb.log(metrics)
         if val_loss < last_loss:
             last_loss = val_loss
             best_state_dict = model.state_dict()
             torch.save(best_state_dict, os.path.join('checkpoints', 'new') + '.pth')
 
     model.load_state_dict(best_state_dict)
+    wandb.finish()
     return model
