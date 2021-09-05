@@ -76,6 +76,7 @@ def run(cfg):
     print(device)
 
     model = get_model(cfg)(cfg=cfg).to(device)
+    wandb.finish()
     wandb.init(project='Covid19_CT_segmentation', config=cfg, name=cfg.model)
     wandb.watch(model, log_freq=100)
 
