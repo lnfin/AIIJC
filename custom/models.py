@@ -15,7 +15,7 @@ class DeepLabV3(nn.Module):
                                           nn.BatchNorm2d(3),
                                           nn.ReLU())
 
-        name = self.base_name + str(self.cfg.backbone)
+        name = self.base_name + self.cfg.backbone
         self.model = getattr(sys.modules['torchvision.models.segmentation'], name)(
             pretrained=self.cfg.pretrained, progress=True
         )
