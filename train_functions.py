@@ -53,7 +53,7 @@ def run(cfg):
 
     model = get_model(cfg)(cfg=cfg).to(device)
     wandb.finish()
-    wandb.init(project='Covid19_CT_segmentation', config=cfg, name=cfg.model)
+    wandb.init(project='Covid19_CT_segmentation_' + cfg.dataset_name, entity='aiijcteamname', config=cfg, name=cfg.model)
     wandb.watch(model, log_freq=100)
 
     optimizer = get_optimizer(cfg)(model.parameters(), **cfg.optimizer_params)
