@@ -13,6 +13,7 @@ def train_epoch(model, train_dl, encoder, criterion, metric, optimizer, schedule
     for X, y in train_dl:
         X = X.to(device)
         y = encoder(y)
+
         y = y.to(device)
 
         optimizer.zero_grad()

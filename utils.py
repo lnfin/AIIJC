@@ -38,6 +38,7 @@ class OneHotEncoder:
         y = np.array(y)
         y = np.expand_dims(y, -1)
         y = np.apply_along_axis(self.encode_num, -1, y)
+        y = np.swapaxes(y, -1, 1)
         return torch.Tensor(y)
 
 
@@ -91,6 +92,16 @@ def get_paths(cfg):
     paths_folder = os.path.join(cfg.data_folder, cfg.dataset_name)
     last_number = 0
     paths, _paths = [], []
+    if cfg.dataset_name == 'MedSegMulti':
+        for i, name in enumerate(sorted(os.listdir(paths_folder))):
+            path = os.path.join(paths_folder, name)
+            if i % 5 == 0:
+                paths.append(_paths)
+                _paths = []
+            _paths.append(path)
+        paths.append(_paths)
+        return paths
+
     for name in sorted(os.listdir(paths_folder)):
         path = os.path.join(paths_folder, name)
         number_of_patient = int(name.split('_')[0])
@@ -99,6 +110,7 @@ def get_paths(cfg):
             _paths = []
             last_number = number_of_patient
         _paths.append(path)
+    paths.append(_paths)
     return paths
 
 
