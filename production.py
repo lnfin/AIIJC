@@ -30,7 +30,6 @@ class ProductionCovid19Dataset(Dataset):
 
 def get_predictions(cfg, best_dict, paths):
     # best_dict потом будет в конфиге
-    # images - list[image, ...] where image shape (512, 512) numpy
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = get_model(cfg).to(device)
     model.load_state_dict(torch.load(best_dict))
