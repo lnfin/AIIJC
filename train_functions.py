@@ -44,30 +44,6 @@ def eval_epoch(model, val_dl, criterion, metric, device):
     return loss_sum / len(val_dl), score_sum / len(val_dl)
 
 
-'''
-def train(model, train_dl, val_dl, criterion, metric, optimizer, scheduler, epochs, save_folder='checkpoints',
-          save_name='model', device=None, n_lungs_to_visual=0):
-    if not device:
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    last_loss = 999
-    best_state_dict = model.state_dict()
-    for i in range(epochs):
-        print(f'Epoch {i + 1:2}:       Loss       |    IoU metric    ')
-        train_loss, train_score = train_epoch(model, train_dl, criterion, metric, optimizer, scheduler, device)
-        print(f'Train stats: {train_loss:.6f} | {train_score:.6f}')
-        val_loss, val_score = eval_epoch(model, val_dl, criterion, metric, device)
-        print(f'  Val stats: {val_loss:.6f} | {val_score:.6f}')
-        if n_lungs_to_visual:
-            show_segmentation(model, val_dl, n=n_lungs_to_visual)
-        if val_loss < last_loss:
-            last_loss = val_loss
-            best_state_dict = model.state_dict()
-            torch.save(best_state_dict, os.path.join(save_folder, save_name) + '.pth')
-
-    model.load_state_dict(best_state_dict)
-'''
-
-
 def run(cfg):
     torch.cuda.empty_cache()
 
@@ -101,13 +77,13 @@ def run(cfg):
                    'train_loss': train_loss,
                    'val_score': val_score.item(),
                    'val_loss': val_loss,
-                   'lr': scheduler.get_last_lr()}
+                   'lr': scheduler.get_last_lr()[-1]}
 
         wandb.log(metrics)
         if val_loss < last_loss:
             last_loss = val_loss
             best_state_dict = model.state_dict()
-            torch.save(best_state_dict, os.path.join('checkpoints', 'new') + '.pth')
+            torch.save(best_state_dict, os.path.join('checkpoints', cfg.model + '_' + cfg.backbone) + '.pth')
 
     model.load_state_dict(best_state_dict)
     wandb.finish()
