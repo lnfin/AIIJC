@@ -2,15 +2,17 @@ import torch
 import os
 from utils import get_scheduler, get_model, get_criterion, get_optimizer, get_metric
 from data_functions import get_loaders
+from utils import OneHotEncoder
 import wandb
 
 
-def train_epoch(model, train_dl, criterion, metric, optimizer, scheduler, device):
+def train_epoch(model, train_dl, encoder, criterion, metric, optimizer, scheduler, device):
     model.train()
     loss_sum = 0
     score_sum = 0
     for X, y in train_dl:
         X = X.to(device)
+        y = encoder(y)
         y = y.to(device)
 
         optimizer.zero_grad()
@@ -27,12 +29,13 @@ def train_epoch(model, train_dl, criterion, metric, optimizer, scheduler, device
     return loss_sum / len(train_dl), score_sum / len(train_dl)
 
 
-def eval_epoch(model, val_dl, criterion, metric, device):
+def eval_epoch(model, val_dl, encoder, criterion, metric, device):
     model.eval()
     loss_sum = 0
     score_sum = 0
     for X, y in val_dl:
         X = X.to(device)
+        y = encoder(y)
         y = y.to(device)
 
         with torch.no_grad():
@@ -62,15 +65,20 @@ def run(cfg):
     metric = get_metric(cfg)(**cfg.metric_params)
     criterion = get_criterion(cfg)(**cfg.criterion_params)
 
+    encoder = OneHotEncoder(cfg)
+
     last_loss = 999
     best_state_dict = model.state_dict()
     for epoch in range(1, cfg.epochs + 1):
         print(f'Epoch #{epoch}')
 
-        train_loss, train_score = train_epoch(model, train_loader, criterion, metric, optimizer, scheduler, device)
+        train_loss, train_score = train_epoch(model, train_loader, encoder,
+                                              criterion, metric,
+                                              optimizer, scheduler, device)
         print(train_score.item(), train_loss)
 
-        val_loss, val_score = eval_epoch(model, train_loader, criterion, metric, device)
+        val_loss, val_score = eval_epoch(model, train_loader, encoder,
+                                         criterion, metric, device)
         print(val_score.item(), val_loss)
 
         metrics = {'train_score': train_score.item(),
