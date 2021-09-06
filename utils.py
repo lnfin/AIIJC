@@ -25,6 +25,22 @@ def discretize_segmentation_maps(probs, threshold=0.5):
     return probs > threshold
 
 
+class OneHotEncoder:
+    def __init__(self, cfg):
+        self.zeros = [0] * cfg.num_classes
+
+    def encode_num(self, x):
+        zeros = self.zeros.copy()
+        zeros[int(x)] = 1
+        return zeros
+
+    def __call__(self, y):
+        y = np.array(y)
+        y = np.expand_dims(y, -1)
+        y = np.apply_along_axis(self.encode_num, -1, y)
+        return torch.Tensor(y)
+
+
 def get_metric(cfg):
     """
     cfg.metric
