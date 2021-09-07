@@ -12,12 +12,14 @@ def train_epoch(model, train_dl, encoder, criterion, metric, optimizer, schedule
     score_sum = 0
     for X, y in train_dl:
         X = X.to(device)
+        print(y.shape)
         y = encoder(y)
-
+        y = y.squeeze()
         y = y.to(device)
 
         optimizer.zero_grad()
         output = model(X)
+        print(y.shape, output.shape)
         loss = criterion(output, y)
         loss.backward()
         optimizer.step()
@@ -48,7 +50,7 @@ def eval_epoch(model, val_dl, encoder, criterion, metric, device):
     return loss_sum / len(val_dl), score_sum / len(val_dl)
 
 
-def run(cfg):
+def run(cfg, use_wandb=True):
     torch.cuda.empty_cache()
 
     train_loader, val_loader = get_loaders(cfg)
@@ -56,9 +58,9 @@ def run(cfg):
     print(device)
 
     model = get_model(cfg)(cfg=cfg).to(device)
-    wandb.finish()
-    wandb.init(project='Covid19_CT_segmentation_' + cfg.dataset_name, entity='aiijcteamname', config=cfg, name=cfg.model)
-    wandb.watch(model, log_freq=100)
+    if use_wandb:
+        wandb.init(project='Covid19_CT_segmentation_' + cfg.dataset_name, entity='aiijcteamname', config=cfg, name=cfg.model)
+        wandb.watch(model, log_freq=100)
 
     optimizer = get_optimizer(cfg)(model.parameters(), **cfg.optimizer_params)
     scheduler = get_scheduler(cfg)(optimizer, **cfg.scheduler_params)
@@ -87,13 +89,13 @@ def run(cfg):
                    'val_score': val_score.item(),
                    'val_loss': val_loss,
                    'lr': scheduler.get_last_lr()[-1]}
-
-        wandb.log(metrics)
+        if use_wandb:
+            wandb.log(metrics)
         if val_loss < last_loss:
             last_loss = val_loss
             best_state_dict = model.state_dict()
             torch.save(best_state_dict, os.path.join('checkpoints', cfg.model + '_' + cfg.backbone) + '.pth')
-
     model.load_state_dict(best_state_dict)
-    wandb.finish()
+    if use_wandb:
+        wandb.finish()
     return model

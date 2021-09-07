@@ -39,6 +39,7 @@ class OneHotEncoder:
         y = np.expand_dims(y, -1)
         y = np.apply_along_axis(self.encode_num, -1, y)
         y = np.swapaxes(y, -1, 1)
+        y = np.ascontiguousarray(y)
         return torch.Tensor(y)
 
 
