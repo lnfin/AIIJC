@@ -115,12 +115,13 @@ def get_paths(cfg):
     return paths
 
 
-def show_segmentation(cfg, loader, n=1, size=16, threshold=0.5, device=None):
+def show_segmentation(cfg, loader, best_dict, n=1, size=16, threshold=0.5, device=None):
     if not device:
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print('Image, Prediction, True mask')
     k = 0
     model = get_model(cfg)(cfg=cfg).to(device)
+    model.load_state_dict(torch.load(best_dict))
     encoder = OneHotEncoder(cfg)
     for X, y in loader:
         with torch.no_grad():
@@ -128,21 +129,18 @@ def show_segmentation(cfg, loader, n=1, size=16, threshold=0.5, device=None):
             y = y.to(device)
 
             output = model(X)
-            output = encoder(output)
+            output = torch.argmax(torch.sigmoid(output), 1).float()
             for i in range(len(X)):
                 if len(torch.unique(y[i])) == 1:
                     continue
                 plt.subplots(1, 8, figsize=(size, size))
-                plt.subplot(1, 4, 1)
+                plt.subplot(1, 3, 1)
                 plt.axis('off')
                 plt.imshow(X[i].cpu().squeeze(), cmap='gray')
-                plt.subplot(1, 4, 2)
+                plt.subplot(1, 3, 2)
                 plt.axis('off')
                 plt.imshow(output[i].cpu().squeeze(), cmap='gray')
-                plt.subplot(1, 4, 3)
-                plt.axis('off')
-                plt.imshow(discretize_segmentation_maps(output[i].cpu().squeeze(), threshold=threshold), cmap='gray')
-                plt.subplot(1, 4, 4)
+                plt.subplot(1, 3, 3)
                 plt.axis('off')
                 plt.imshow(y[i].cpu().squeeze(), cmap='gray')
                 plt.show()
