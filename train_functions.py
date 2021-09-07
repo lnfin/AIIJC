@@ -12,14 +12,12 @@ def train_epoch(model, train_dl, encoder, criterion, metric, optimizer, schedule
     score_sum = 0
     for X, y in train_dl:
         X = X.to(device)
-        print(y.shape)
         y = encoder(y)
         y = y.squeeze()
         y = y.to(device)
 
         optimizer.zero_grad()
         output = model(X)
-        print(y.shape, output.shape)
         loss = criterion(output, y)
         loss.backward()
         optimizer.step()
@@ -39,6 +37,7 @@ def eval_epoch(model, val_dl, encoder, criterion, metric, device):
     for X, y in val_dl:
         X = X.to(device)
         y = encoder(y)
+        y = y.squeeze()
         y = y.to(device)
 
         with torch.no_grad():
