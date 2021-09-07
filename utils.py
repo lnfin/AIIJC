@@ -93,7 +93,7 @@ def get_paths(cfg):
     paths_folder = os.path.join(cfg.data_folder, cfg.dataset_name)
     last_number = 0
     paths, _paths = [], []
-    if cfg.dataset_name == 'MedSegMulti':
+    if 'MedSeg' in cfg.dataset_name:
         for i, name in enumerate(sorted(os.listdir(paths_folder))):
             path = os.path.join(paths_folder, name)
             if i % 5 == 0:
