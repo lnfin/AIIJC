@@ -1,21 +1,17 @@
 import streamlit as st
 import gdown
-import torch
-from custom.models import DeepLabV3
-from data_functions import Covid19Dataset
-from torch.utils.data import DataLoader
 from PIL import Image
 import numpy as np
 from config import Cfg as cfg
 from production import get_predictions
-from utils import discretize_segmentation_maps
 
 drive_link = 'https://drive.google.com/uc?id=1-tadxTBTRyru10rNNI0y4UcdntMK7hdh'  # example.pth
+model_name = "DeepLabV3_resnet101" + '.pth'
 
 
-@st.cache
-def download_model():
-    gdown.cached_download(drive_link, "deeplabv3.pth", quiet=False)
+# @st.cache
+# def download_model():
+#     gdown.cached_download(drive_link, model_name, quiet=False)
 
 
 @st.cache
@@ -44,7 +40,7 @@ def main():
     """,
         unsafe_allow_html=True,
     )
-    download_model()
+    # download_model()
 
     st.title('Сегментация поражения легких коронавирусной пневмонией')
 
@@ -67,7 +63,7 @@ def main():
 
         st.info('Делаем предсказания, пожалуйста, подождите')
         outputs = []
-        for image in get_predictions(cfg, 'example.pth', images):
+        for image in get_predictions(cfg, model_name, images):
             print(image.shape)
             outputs.append(image[0].cpu().squeeze())
 
@@ -83,8 +79,9 @@ def main():
                 if first_check:
                     col2.header("Общая сегментация")
                     print(output.shape)
-                    print(sum(output.numpy()))
-                    col2.image(output.numpy(), width=350)
+                    pred = output.numpy()
+                    print(sum(pred))
+                    col2.image(pred, width=350)
 
                     col1, col2, col3 = st.columns([1, 2, 1])
 

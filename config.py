@@ -6,29 +6,28 @@ class Cfg:
 
     num_classes = 2
     in_channels = 1
-    output_channels = 1
-    backbone = 'resnet50'  # 50, 101
+    output_channels = num_classes = 2
+    backbone = 'resnet101'  # 50, 101
     pretrained = True
 
     # TRAIN AND EVAL SETTINGS
     lr = 1e-4
     epochs = 20
-    train_batchsize = 10
-    val_batchsize = 10
+    batch_size = 4
 
-    train_size, val_size = 0.8, 0.2
+    val_size = 0.8, 0.2
     # CUSTOM
     metric = 'IoUScore'
 
     criterion = 'IoULoss'
     optimizer = 'Adam'
-    # scheduler = 'OneCycleLR'
+    scheduler = 'OneCycleLR'
 
     # PATHES
     root_folder = '/mnt/c/Users/dalma/Desktop/AIIJC/CovidSeg/'
 
     data_folder = 'data/'
-    dataset_name = 'MosMed'  # MosMed, Zenodo, ZenodoLungs, MedSeg,
+    dataset_name = 'MedSegMulti'  # MosMed, Zenodo, ZenodoLungs, MedSeg,
 
     custom_folder = 'custom/'
 
@@ -53,11 +52,11 @@ class Cfg:
         )]
 
     post_transforms = [
-        
+
     ]
 
     # CROSS-VALIDATION
-    kfold = True
-
-    n_splits = 5
-    fold_number = 1  # from 1 to n_splits
+    # kfold = False
+    #
+    # n_splits = 5
+    # fold_number = 1  # from 1 to n_splits
