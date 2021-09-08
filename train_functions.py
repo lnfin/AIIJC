@@ -49,7 +49,7 @@ def eval_epoch(model, val_dl, encoder, criterion, metric, device):
     return loss_sum / len(val_dl), score_sum / len(val_dl)
 
 
-def run(cfg, use_wandb=True):
+def run(cfg, use_wandb=True, id=0):
     torch.cuda.empty_cache()
 
     train_loader, val_loader = get_loaders(cfg)
@@ -58,7 +58,8 @@ def run(cfg, use_wandb=True):
 
     model = get_model(cfg)(cfg=cfg).to(device)
     if use_wandb:
-        wandb.init(project='Covid19_CT_segmentation_' + cfg.dataset_name, entity='aiijcteamname', config=cfg, name=cfg.model)
+        wandb.init(project='Covid19_CT_segmentation_' + cfg.dataset_name, entity='aiijcteamname', config=cfg,
+                   name=cfg.model)
         wandb.watch(model, log_freq=100)
 
     optimizer = get_optimizer(cfg)(model.parameters(), **cfg.optimizer_params)
@@ -93,8 +94,11 @@ def run(cfg, use_wandb=True):
         if val_loss < last_loss:
             last_loss = val_loss
             best_state_dict = model.state_dict()
-            torch.save(best_state_dict, os.path.join('checkpoints', cfg.model + '_' + cfg.backbone) + '.pth')
+            torch.save(best_state_dict,
+                       os.path.join('checkpoints', cfg.model + '_' + cfg.backbone) + '.pth')
     model.load_state_dict(best_state_dict)
     if use_wandb:
         wandb.finish()
+    torch.save(best_state_dict,
+               os.path.join('checkpoints', cfg.model + '_' + cfg.backbone + '_' + str(val_score)) + '.pth')
     return model
