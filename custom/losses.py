@@ -1,7 +1,6 @@
 from torch import nn
 import torch
 import torch.nn.functional as F
-from torch.nn import BCELoss
 
 
 class IoULoss(nn.Module):
