@@ -115,20 +115,19 @@ def get_paths(cfg):
     return paths
 
 
-def show_segmentation(cfg, loader, best_dict, n=1, size=16, threshold=0.5, device=None):
+def show_segmentation(cfg, loader, best_dict, n=1, size=16, device=None):
     if not device:
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print('Image, Prediction, True mask')
     k = 0
     model = get_model(cfg)(cfg=cfg).to(device)
     model.load_state_dict(torch.load(best_dict))
-    encoder = OneHotEncoder(cfg)
     for X, y in loader:
         with torch.no_grad():
             X = X.to(device)
             y = y.to(device)
 
-            output = model(X)
+            output = model(X).to(device)
             output = torch.argmax(torch.sigmoid(output), 1).float()
             for i in range(len(X)):
                 if len(torch.unique(y[i])) == 1:
