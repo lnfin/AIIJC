@@ -20,6 +20,7 @@ class ProductionCovid19Dataset(Dataset):
         path = self.paths[index]
         image = cv2.imread(path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        image = image / np.max(image)
         if self.transform:
             transformed = self.transform(image=image)
             image = transformed['image']
@@ -34,7 +35,7 @@ def get_predictions(cfg, best_dict, paths):
     model = get_model(cfg)(cfg)
     model.load_state_dict(torch.load(best_dict, map_location=device), strict=False)
     model.eval()
-    
+
     encoder = OneHotEncoder(cfg)
     _, transform = get_transforms(cfg)
     dataset = ProductionCovid19Dataset(paths, transform=transform)
