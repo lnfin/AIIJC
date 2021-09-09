@@ -6,6 +6,7 @@ class Cfg:
 
     in_channels = 1
     output_channels = 2
+    batch_size = 4
     backbone = best_dict.split('.')[0].split('_')[1]
     pretrained = True
 

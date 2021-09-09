@@ -19,10 +19,10 @@ class ProductionCovid19Dataset(Dataset):
         path = self.paths[index]
         image = cv2.imread(path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        assert image.shape == (512, 512)
         if self.transform:
             transformed = self.transform(image=image)
             image = transformed['image']
+        assert image.shape == (512, 512), "Images not 512x512"
         image = torch.from_numpy(np.array([image], dtype=np.float))
         image = image.type(torch.FloatTensor)
         return image, 'None'
