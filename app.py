@@ -1,17 +1,16 @@
 import streamlit as st
 import gdown
-import torch
-from custom.models import DeepLabV3
-from data_functions import Covid19Dataset
-from torch.utils.data import DataLoader
 from PIL import Image
+import numpy as np
+from config import Cfg as cfg
+from production import get_predictions
 
-drive_link = 'https://drive.google.com/uc?id=1vB0iLcF1OQBcihQV-OyCmFx1Rc8BwjcA'  # example.pth
+drive_link = 'https://drive.google.com/uc?id=1-tadxTBTRyru10rNNI0y4UcdntMK7hdh'  # example.pth
 
 
 @st.cache
 def download_model():
-    gdown.cached_download(drive_link, "example.pth", quiet=False)
+    gdown.cached_download(drive_link, quiet=False)
 
 
 @st.cache
@@ -21,7 +20,7 @@ def read_files(files):
         with open('images/' + file.name, 'wb') as f:
             f.write(file.getvalue())
 
-        imgs.append(file.name)
+        imgs.append('images/' + file.name)
     return imgs
 
 
@@ -40,7 +39,7 @@ def main():
     """,
         unsafe_allow_html=True,
     )
-    download_model()
+    # download_model()
 
     st.title('Сегментация поражения легких коронавирусной пневмонией')
 
@@ -48,36 +47,27 @@ def main():
     filenames = st.file_uploader('Выберите или ператащите сюда снимки', type=['png', 'jpeg', 'jpg'],
                                  accept_multiple_files=True)
 
-    st.markdown('<b>Выберите типы сегментации</b>', unsafe_allow_html=True)
-
-    first_check = st.checkbox(label='Область поражения одним цветом', value=True)
-    second_check = st.checkbox(label='Отдельно отображены разные виды', value=True)
-
-    if not (first_check or second_check):
-        st.error('Выберите одну из сегментаций')
+    multi_class = st.checkbox(label='Мульти-классовая сегментация', value=True)
 
     if st.button('Загрузить') and filenames:
         print(filenames)
         images = read_files(filenames)
-        print(images)
         print(len(images))
-        with st.expander("Информация о каждом фото"):
-            for image in images:
-                st.markdown(f'<h3>{image}</h3>', unsafe_allow_html=True)
 
+        st.info('Делаем предсказания, пожалуйста, подождите')
+
+        with st.expander("Информация о каждом фото"):
+            for filename, pred in zip(images, get_predictions(cfg, images)):
+                st.markdown(f'<h3>{filename}</h3>', unsafe_allow_html=True)
+
+                original = np.array(Image.open(filename))
                 col1, col2 = st.columns(2)
                 col1.header("Оригинал")
-                col1.image(Image.open('images/original.jpeg'), width=350)
+                col1.image(original, width=350)
 
-                if first_check:
-                    col2.header("Общая сегментация")
-                    col2.image(Image.open('images/multiseg.png'), width=350)
-
-                    col1, col2, col3 = st.columns([1, 2, 1])
-
-                if second_check:
-                    col2.header('Потиповая сегментация')
-                    col2.image(Image.open('images/multiseg.png'), width=350)
+                if multi_class:
+                    col2.header("Сегментация")
+                    col2.image(pred, width=350)
 
                 st.markdown('<br />', unsafe_allow_html=True)
 

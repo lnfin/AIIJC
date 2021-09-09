@@ -28,18 +28,27 @@ class ProductionCovid19Dataset(Dataset):
         return image, 'None'
 
 
-def get_predictions(cfg, best_dict, paths):
+def get_predictions(cfg, paths):
     # best_dict потом будет в конфиге
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = get_model(cfg).to(device)
-    model.load_state_dict(torch.load(best_dict))
+    model = get_model(cfg)(cfg=cfg)
+    model.load_state_dict(torch.load(cfg.best_dict, map_location=torch.device('cpu')))
     model.eval()
     _, transform = get_transforms(cfg)
     dataset = ProductionCovid19Dataset(paths, transform=transform)
     dataloader = DataLoader(dataset, batch_size=cfg.batch_size, drop_last=False)
     for X, _ in dataloader:
         X = X.to(device)
+        X = X / torch.max(X)
 
         with torch.no_grad():
             output = model(X)
-            yield output
+            for pred in output:
+                pred = pred.squeeze().cpu()
+                pred = torch.argmax(torch.sigmoid(pred), 0).float()
+                print(pred.shape)
+                print(torch.unique(pred))
+                maximum = torch.max(pred)
+                if maximum > 1:
+                    pred = pred / maximum
+                yield pred.numpy()
