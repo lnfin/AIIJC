@@ -1,6 +1,7 @@
 from utils import get_model
 from data_functions import get_transforms
 from torch.utils.data import Dataset, DataLoader
+import custom.models
 import cv2
 import torch
 import numpy as np
@@ -31,7 +32,7 @@ class ProductionCovid19Dataset(Dataset):
 def get_predictions(cfg, paths):
     # best_dict потом будет в конфиге
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = get_model(cfg)(cfg=cfg)
+    model = get_model(cfg)(cfg=cfg).to(device)
     model.load_state_dict(torch.load(cfg.best_dict, map_location=torch.device('cpu')))
     model.eval()
     _, transform = get_transforms(cfg)
@@ -51,4 +52,5 @@ def get_predictions(cfg, paths):
                 maximum = torch.max(pred)
                 if maximum > 1:
                     pred = pred / maximum
+                print(torch.unique(pred))
                 yield pred.numpy()

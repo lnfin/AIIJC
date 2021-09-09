@@ -1,16 +1,8 @@
 class Cfg:
     seed = 0xD153A53
-
-    best_dict = "DeepLabV3_resnet101" + '.pth'
-    model = best_dict.split('_')[0]
-
-    in_channels = 1
-    output_channels = 2
-    batch_size = 4
-    backbone = best_dict.split('.')[0].split('_')[1]
     pretrained = True
-
-    root_folder = '/mnt/c/Users/dalma/Desktop/AIIJC/CovidSeg/'
+    in_channels = 1
+    batch_size = 4
 
     pre_transforms = [
         dict(
@@ -25,3 +17,13 @@ class Cfg:
 
     augmentations = []
     post_transforms = []
+    model = 'DeepLabV3'
+    backbone = 'resnet101'
+
+    def __init__(self, multi=True):
+        if not multi:
+            self.best_dict = self.model + '_' + self.backbone + '.pth'
+            self.output_channels = 2
+        else:
+            self.best_dict = self.model + '_' + self.backbone + '_multi' + '.pth'
+            self.output_channels = 4

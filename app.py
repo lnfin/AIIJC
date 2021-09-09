@@ -2,7 +2,8 @@ import streamlit as st
 import gdown
 from PIL import Image
 import numpy as np
-from config import Cfg as cfg
+import custom.models
+from config import Cfg
 from production import get_predictions
 
 drive_link = 'https://drive.google.com/uc?id=1-tadxTBTRyru10rNNI0y4UcdntMK7hdh'  # example.pth
@@ -55,7 +56,7 @@ def main():
         print(len(images))
 
         st.info('Делаем предсказания, пожалуйста, подождите')
-
+        cfg = Cfg(multi_class)
         with st.expander("Информация о каждом фото"):
             for filename, pred in zip(images, get_predictions(cfg, images)):
                 st.markdown(f'<h3>{filename}</h3>', unsafe_allow_html=True)
@@ -65,9 +66,8 @@ def main():
                 col1.header("Оригинал")
                 col1.image(original, width=350)
 
-                if multi_class:
-                    col2.header("Сегментация")
-                    col2.image(pred, width=350)
+                col2.header("Сегментация")
+                col2.image(pred, width=350)
 
                 st.markdown('<br />', unsafe_allow_html=True)
 
