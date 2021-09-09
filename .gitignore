@@ -2,5 +2,7 @@ __pycache__/*
 data/*
 custom/*
 images/*
+segmentations/*
+segmentations.zip
 .idea/
 *.pth
