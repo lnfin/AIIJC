@@ -3,26 +3,13 @@ import torch
 import os
 import sys
 import matplotlib.pyplot as plt
-from custom import metrics, losses, models
-from torchvision import models
 
 
 def set_seed(seed=0xD153A53):
-    """
-    Sets seed of all modules
-
-    :param seed: seed
-    :return: None
-    """
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
     os.environ['PYTHONHASHSEED'] = str(seed)
-
-
-def discretize_segmentation_maps(probs, threshold=0.5):
-    threshold = torch.from_numpy(np.array(threshold)).to(probs.device)
-    return probs > threshold
 
 
 class OneHotEncoder:
@@ -44,32 +31,14 @@ class OneHotEncoder:
 
 
 def get_metric(cfg):
-    """
-    cfg.metric
-
-    :param cfg: Config
-    :return: metric
-    """
     return getattr(sys.modules['custom.metrics'], cfg.metric)
 
 
 def get_criterion(cfg):
-    """
-    cfg.criterion
-
-    :param cfg: Config
-    :return: loss_function
-    """
     return getattr(sys.modules['custom.losses'], cfg.criterion)
 
 
 def get_model(cfg):
-    """
-    cfg.model
-
-    :param cfg: Config
-    :return: model
-    """
     name = cfg.model
     model = getattr(sys.modules['custom.models'], name)
     return model
