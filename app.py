@@ -6,12 +6,12 @@ import custom.models
 from config import Cfg
 from production import get_predictions
 
-drive_link = 'https://drive.google.com/uc?id=1-tadxTBTRyru10rNNI0y4UcdntMK7hdh'  # example.pth
+drive_link = 'https://drive.google.com/uc?id=1-tadxTBTRyru10rNNI0y4UcdntMK7hdh'
 
 
 @st.cache
 def download_model():
-    gdown.cached_download(drive_link, quiet=False)
+    gdown.cached_download(drive_link, 'DeepLabV3_resnet101_multi.pth', quiet=False)
 
 
 @st.cache
@@ -27,8 +27,18 @@ def read_files(files):
 
 def main():
     st.markdown(
-        f"""
+    f"""
     <style>
+        .sidebar .sidebar-content {{
+            background: url("https://i.ibb.co/BL3qFQW/background.png");
+            background-repeat: repeat;
+            background-size: 100% auto;
+    }}
+        .reportview-container {{
+            background: url("https://i.ibb.co/BL3qFQW/background.png");
+            background-repeat: repeat;
+            background-size: 100% auto;
+        }}
         .reportview-container .main .block-container{{
             max-width: 850px;
             padding-top: 0rem;
