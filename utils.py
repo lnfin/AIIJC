@@ -85,15 +85,11 @@ def get_scheduler(cfg):
     return scheduler
 
 
-def get_paths(cfg):
-    """
-    :param cfg: Config
-    :return: paths [patient[slice, ...], ...]
-    """
-    paths_folder = os.path.join(cfg.data_folder, cfg.dataset_name)
+def get_paths_1_dataset(data_folder, dataset_name):
+    paths_folder = os.path.join(data_folder, dataset_name)
     last_number = 0
     paths, _paths = [], []
-    if 'MedSeg' in cfg.dataset_name:
+    if 'MedSeg' in dataset_name:
         for i, name in enumerate(sorted(os.listdir(paths_folder))):
             path = os.path.join(paths_folder, name)
             if i % 5 == 0:
@@ -112,6 +108,21 @@ def get_paths(cfg):
             last_number = number_of_patient
         _paths.append(path)
     paths.append(_paths)
+    return paths
+
+
+def get_paths(cfg):
+    """
+    :param cfg: Config
+    :return: paths [patient[slice, ...], ...]
+    """
+    dataset_name = cfg.dataset_name
+    paths = []
+    if isinstance(cfg.dataset_name, list):
+        for name in dataset_name:
+            paths.extend(get_paths_1_dataset(cfg.data_folder, name))
+        return paths
+    paths = get_paths_1_dataset(cfg.data_folder, dataset_name)
     return paths
 
 
