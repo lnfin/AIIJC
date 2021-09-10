@@ -47,7 +47,6 @@ def get_predictions(cfg, paths):
             for pred in output:
                 pred = pred.squeeze().cpu()
                 pred = torch.argmax(torch.sigmoid(pred), 0).float()
-                print(pred.shape)
                 print(torch.unique(pred))
                 maximum = torch.max(pred)
                 if maximum > 1:

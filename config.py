@@ -17,13 +17,15 @@ class Cfg:
 
     augmentations = []
     post_transforms = []
-    model = 'DeepLabV3'
-    backbone = 'resnet101'
 
     def __init__(self, multi=True):
         if not multi:
+            self.model = 'DeepLabV3'
+            self.backbone = 'resnet101'
             self.best_dict = self.model + '_' + self.backbone + '.pth'
             self.output_channels = 2
         else:
+            self.model = 'DeepLabV3'
+            self.backbone = 'resnet101'
             self.best_dict = self.model + '_' + self.backbone + '_multi' + '.pth'
             self.output_channels = 4
