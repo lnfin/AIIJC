@@ -28,8 +28,9 @@ class IoUScoreBinary(object):
 
     def __call__(self, y_pred, y_true):
         y_pred = discretize_segmentation_maps(y_pred, self.threshold).float()
+        y_pred = y_pred.squeeze()
         y_true = y_true.float()
-        intersection = torch.sum(y_true * y_pred, dim=[2, 3])
-        union = torch.sum(y_true, dim=[2, 3]) + torch.sum(y_pred, dim=[2, 3]) - intersection
+        intersection = torch.sum(y_true * y_pred, dim=[1, 2])
+        union = torch.sum(y_true, dim=[1, 2]) + torch.sum(y_pred, dim=[1, 2]) - intersection
         ious = ((intersection + self.eps) / (union + self.eps)).mean(dim=0)
         return ious
