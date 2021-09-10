@@ -4,6 +4,8 @@ import os
 import sys
 import matplotlib.pyplot as plt
 import custom.models
+import custom.metrics
+import custom.losses
 
 
 def set_seed(seed=0xD153A53):
