@@ -12,7 +12,8 @@ def train_epoch(model, train_dl, encoder, criterion, metric, optimizer, schedule
     score_sum = 0
     for X, y in train_dl:
         X = X.to(device)
-        y = encoder(y)
+        if encoder is not None:
+            y = encoder(y)
         y = y.squeeze()
         y = y.to(device)
 
@@ -36,7 +37,8 @@ def eval_epoch(model, val_dl, encoder, criterion, metric, device):
     score_sum = 0
     for X, y in val_dl:
         X = X.to(device)
-        y = encoder(y)
+        if encoder is not None:
+            y = encoder(y)
         y = y.squeeze()
         y = y.to(device)
 
@@ -68,7 +70,10 @@ def run(cfg, use_wandb=True, max_early_stopping=2):
     metric = get_metric(cfg)(**cfg.metric_params)
     criterion = get_criterion(cfg)(**cfg.criterion_params)
 
-    encoder = OneHotEncoder(cfg)
+    if cfg.output_channels == 1:
+        encoder = None
+    else:
+        encoder = OneHotEncoder(cfg)
 
     best_val_loss = 999
     last_train_loss = 0
