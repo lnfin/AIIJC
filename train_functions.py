@@ -12,6 +12,8 @@ def train_epoch(model, train_dl, encoder, criterion, metric, optimizer, schedule
     score_sum = 0
     for X, y in train_dl:
         X = X.to(device)
+        if len(torch.unique(X)) == 1:
+            continue
         if encoder is not None:
             y = encoder(y)
         y = y.squeeze()
@@ -37,6 +39,8 @@ def eval_epoch(model, val_dl, encoder, criterion, metric, device):
     score_sum = 0
     for X, y in val_dl:
         X = X.to(device)
+        if len(torch.unique(X)) == 1:
+            continue
         if encoder is not None:
             y = encoder(y)
         y = y.squeeze()
