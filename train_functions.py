@@ -82,11 +82,11 @@ def run(cfg, use_wandb=True, max_early_stopping=2):
                                               criterion, metric,
                                               optimizer, scheduler, device)
         print('      Score   |   Loss')
-        print(f'Train: {train_score.item()} | {train_loss}')
+        print(f'Train: {train_score.item():.6f} | {train_loss:.6f}')
 
         val_loss, val_score = eval_epoch(model, train_loader, encoder,
                                          criterion, metric, device)
-        print(val_score.item(), val_loss)
+        print(f'Val: {val_score.item():.6f} | {val_loss:.6f)}')
 
         metrics = {'train_score': train_score.item(),
                    'train_loss': train_loss,
