@@ -58,7 +58,8 @@ def run(cfg, use_wandb=True):
 
     model = get_model(cfg)(cfg=cfg).to(device)
     if use_wandb:
-        wandb.init(project='Covid19_CT_segmentation_' + str(cfg.dataset_name), entity='aiijcteamname', config=cfg, name=cfg.model)
+        wandb.init(project='Covid19_CT_segmentation_' + str(cfg.dataset_name), entity='aiijcteamname', config=cfg,
+                   name=cfg.model)
         wandb.watch(model, log_freq=100)
 
     optimizer = get_optimizer(cfg)(model.parameters(), **cfg.optimizer_params)
@@ -69,7 +70,10 @@ def run(cfg, use_wandb=True):
 
     encoder = OneHotEncoder(cfg)
 
-    last_loss = 999
+    best_val_loss = 999
+    last_train_loss = 0
+    last_val_loss = 999
+    early_stopping_flag = 0
     best_state_dict = model.state_dict()
     for epoch in range(1, cfg.epochs + 1):
         print(f'Epoch #{epoch}')
@@ -77,7 +81,8 @@ def run(cfg, use_wandb=True):
         train_loss, train_score = train_epoch(model, train_loader, encoder,
                                               criterion, metric,
                                               optimizer, scheduler, device)
-        print(train_score.item(), train_loss)
+        print('      Score   |   Loss')
+        print(f'Train: {train_score.item()} | {train_loss}')
 
         val_loss, val_score = eval_epoch(model, train_loader, encoder,
                                          criterion, metric, device)
@@ -90,10 +95,17 @@ def run(cfg, use_wandb=True):
                    'lr': scheduler.get_last_lr()[-1]}
         if use_wandb:
             wandb.log(metrics)
-        if val_loss < last_loss:
-            last_loss = val_loss
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
             best_state_dict = model.state_dict()
             torch.save(best_state_dict, os.path.join('checkpoints', cfg.model + '_' + cfg.backbone) + '.pth')
+        if train_loss < last_train_loss and val_loss > last_val_loss:
+            early_stopping_flag += 1
+            if early_stopping_flag == 2:
+                print('<<< EarlyStopping >>>')
+                break
+        last_train_loss = train_loss
+        last_val_loss = val_loss
     model.load_state_dict(best_state_dict)
     if use_wandb:
         wandb.finish()
