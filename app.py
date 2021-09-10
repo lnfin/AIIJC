@@ -108,8 +108,11 @@ def main():
                     file_name="segmentations.zip",
             )
         
-        # os.rmdir(user_dir)
-        # os.rmdir(user_dir)
+        for file in os.listdir(user_dir):
+            os.remove(user_dir + file)
+            
+        os.rmdir(user_dir)
+
 
 
 if __name__ == '__main__':
