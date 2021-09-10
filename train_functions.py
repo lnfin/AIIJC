@@ -49,7 +49,7 @@ def eval_epoch(model, val_dl, encoder, criterion, metric, device):
     return loss_sum / len(val_dl), score_sum / len(val_dl)
 
 
-def run(cfg, use_wandb=True):
+def run(cfg, use_wandb=True, max_early_stopping=2):
     torch.cuda.empty_cache()
 
     train_loader, val_loader = get_loaders(cfg)
@@ -101,7 +101,7 @@ def run(cfg, use_wandb=True):
             torch.save(best_state_dict, os.path.join('checkpoints', cfg.model + '_' + cfg.backbone) + '.pth')
         if train_loss < last_train_loss and val_loss > last_val_loss:
             early_stopping_flag += 1
-            if early_stopping_flag == 2:
+            if early_stopping_flag == max_early_stopping:
                 print('<<< EarlyStopping >>>')
                 break
         last_train_loss = train_loss
