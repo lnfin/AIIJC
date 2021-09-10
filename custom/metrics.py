@@ -1,5 +1,9 @@
 import torch
-from utils import discretize_segmentation_maps
+
+
+def discretize_segmentation_maps(probs, threshold=0.5):
+    threshold = torch.from_numpy(np.array(threshold)).to(probs.device)
+    return probs > threshold
 
 
 class IoUScore(object):

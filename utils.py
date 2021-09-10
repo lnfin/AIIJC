@@ -15,11 +15,6 @@ def set_seed(seed=0xD153A53):
     os.environ['PYTHONHASHSEED'] = str(seed)
 
 
-def discretize_segmentation_maps(probs, threshold=0.5):
-    threshold = torch.from_numpy(np.array(threshold)).to(probs.device)
-    return probs > threshold
-
-
 class OneHotEncoder:
     def __init__(self, cfg):
         self.zeros = [0] * cfg.num_classes
