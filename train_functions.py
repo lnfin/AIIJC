@@ -41,7 +41,7 @@ def eval_epoch(model, val_dl, encoder, criterion, metric, device):
     loss_sum = 0
     score_sum = 0
     visual_count = len(val_dl) // 10
-    for i, (X, y) in val_dl:
+    for i, (X, y) in enumerate(val_dl):
         X = X.to(device)
         if len(torch.unique(X)) == 1:
             continue
