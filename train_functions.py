@@ -10,7 +10,7 @@ def train_epoch(model, train_dl, encoder, criterion, metric, optimizer, schedule
     model.train()
     loss_sum = 0
     score_sum = 0
-    visual_count = len(train_dl) // 10
+    visual_count = len(train_dl) // 20
     for i, (X, y) in enumerate(train_dl):
         X = X.to(device)
         if len(torch.unique(X)) == 1:
@@ -32,7 +32,7 @@ def train_epoch(model, train_dl, encoder, criterion, metric, optimizer, schedule
         loss_sum += loss
         score_sum += score
         if (i + 1) % visual_count == 0:
-            print('|', end='')
+            print(score, loss)
     return loss_sum / len(train_dl), score_sum / len(train_dl)
 
 
@@ -40,7 +40,7 @@ def eval_epoch(model, val_dl, encoder, criterion, metric, device):
     model.eval()
     loss_sum = 0
     score_sum = 0
-    visual_count = len(val_dl) // 10
+    visual_count = len(val_dl) // 20
     for i, (X, y) in val_dl:
         X = X.to(device)
         if len(torch.unique(X)) == 1:
@@ -58,7 +58,7 @@ def eval_epoch(model, val_dl, encoder, criterion, metric, device):
             score_sum += score
 
         if (i + 1) % visual_count == 0:
-            print('|', end='')
+            print(score, loss)
     return loss_sum / len(val_dl), score_sum / len(val_dl)
 
 
