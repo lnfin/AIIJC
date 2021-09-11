@@ -33,6 +33,17 @@ class OneHotEncoder:
         return torch.Tensor(y)
 
 
+class FakeScheduler:
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def step(self, *args, **kwargs):
+        pass
+
+    def get_last_lr(self, *args, **kwargs):
+        return [0]
+
+
 def get_metric(cfg):
     return getattr(sys.modules['custom.metrics'], cfg.metric)
 
@@ -53,7 +64,10 @@ def get_optimizer(cfg):
 
 
 def get_scheduler(cfg):
-    scheduler = getattr(sys.modules['torch.optim.lr_scheduler'], cfg.scheduler)
+    if cfg.scheduler:
+        scheduler = getattr(sys.modules['torch.optim.lr_scheduler'], cfg.scheduler)
+    else:
+        scheduler = FakeScheduler
     return scheduler
 
 

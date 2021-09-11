@@ -10,13 +10,14 @@ def train_epoch(model, train_dl, encoder, criterion, metric, optimizer, schedule
     model.train()
     loss_sum = 0
     score_sum = 0
-    for X, y in train_dl:
+    visual_count = len(train_dl) // 10
+    for i, (X, y) in enumerate(train_dl):
         X = X.to(device)
         if len(torch.unique(X)) == 1:
             continue
         if encoder is not None:
             y = encoder(y)
-        y = y.squeeze()
+        y = y.squeeze(4)
         y = y.to(device)
 
         optimizer.zero_grad()
@@ -30,6 +31,8 @@ def train_epoch(model, train_dl, encoder, criterion, metric, optimizer, schedule
         score = metric(output, y).mean()
         loss_sum += loss
         score_sum += score
+        if (i + 1) % visual_count == 0:
+            print('|', end='')
     return loss_sum / len(train_dl), score_sum / len(train_dl)
 
 
@@ -37,7 +40,8 @@ def eval_epoch(model, val_dl, encoder, criterion, metric, device):
     model.eval()
     loss_sum = 0
     score_sum = 0
-    for X, y in val_dl:
+    visual_count = len(val_dl) // 10
+    for i, (X, y) in val_dl:
         X = X.to(device)
         if len(torch.unique(X)) == 1:
             continue
@@ -52,6 +56,9 @@ def eval_epoch(model, val_dl, encoder, criterion, metric, device):
             score = metric(output, y).mean()
             loss_sum += loss
             score_sum += score
+
+        if (i + 1) % visual_count == 0:
+            print('|', end='')
     return loss_sum / len(val_dl), score_sum / len(val_dl)
 
 
@@ -92,13 +99,13 @@ def run(cfg, use_wandb=True, max_early_stopping=2):
                                               optimizer, scheduler, device)
         train_score = train_score.item()
         print('      Score   |   Loss')
-        print(f'Train: {train_score:.6f} | {train_loss:.6f}')
-
+        # print(f'Train: {train_score:.6f} | {train_loss:.6f}')
+        print('Train', train_score, train_loss)
         val_loss, val_score = eval_epoch(model, train_loader, encoder,
                                          criterion, metric, device)
         val_score = val_score.item()
-        print(f'Val: {val_score:.6f} | {val_loss:.6f)}')
-
+        # print(f'Val: {val_score:.6f} | {val_loss:.6f)}')
+        print('Val', val_score, val_loss)
         metrics = {'train_score': train_score,
                    'train_loss': train_loss,
                    'val_score': val_score,
