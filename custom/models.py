@@ -10,7 +10,7 @@ class Unet(nn.Module):
     def __init__(self, cfg):
         super(Unet, self).__init__()
         self.cfg = cfg
-        self.model = smp.Unet(self.backbone, classes=self.output_channels, activation='softmax',
+        self.model = smp.Unet(cfg.backbone, classes=cfg.output_channels, activation='softmax',
                               in_channels=cfg.in_channels)
 
     def forward(self, x):
@@ -21,7 +21,7 @@ class UnetPlusPlus(nn.Module):
     def __init__(self, cfg):
         super(UnetPlusPlus, self).__init__()
         self.cfg = cfg
-        self.model = smp.UnetPlusPlus(self.backbone, classes=self.output_channels, activation='softmax',
+        self.model = smp.UnetPlusPlus(cfg.backbone, classes=cfg.output_channels, activation='softmax',
                                       in_channels=cfg.in_channels)
 
     def forward(self, x):
@@ -32,7 +32,7 @@ class DeepLabV3(nn.Module):
     def __init__(self, cfg):
         super(DeepLabV3, self).__init__()
         self.cfg = cfg
-        self.model = smp.DeepLabV3(self.backbone, classes=self.output_channels, activation='softmax',
+        self.model = smp.DeepLabV3(cfg.backbone, classes=cfg.output_channels, activation='softmax',
                                    in_channels=cfg.in_channels)
 
     def forward(self, x):

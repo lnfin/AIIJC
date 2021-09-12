@@ -12,7 +12,9 @@ class IoUScore(object):
         self.eps = eps
 
     def __call__(self, y_pred, y_true):
-        assert y_pred.shape == y_true.shape, str(y_pred.shape) + '><' + str(y_true.shape)
+        if len(y_true.shape) < 4:
+            y_true = y_true.unsqueeze(0)
+        assert y_pred.shape == y_true.shape, str(y_pred.shape) + ' != ' + str(y_true.shape)
         y_pred = torch.argmax(y_pred, 1).float()
         y_true = torch.argmax(y_true, 1).float()
         intersection = torch.sum(y_true * y_pred >= 1, dim=[1, 2])
@@ -28,7 +30,6 @@ class IoUScoreBinary(object):
 
     def __call__(self, y_pred, y_true):
         y_pred = discretize_segmentation_maps(y_pred, self.threshold).float()
-        y_pred = y_pred.squeeze()
         y_true = y_true.float()
         intersection = torch.sum(y_true * y_pred, dim=[1, 2])
         union = torch.sum(y_true, dim=[1, 2]) + torch.sum(y_pred, dim=[1, 2]) - intersection

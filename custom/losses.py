@@ -1,6 +1,8 @@
 from torch import nn
 import torch
 import torch.nn.functional as F
+from torch import Tensor
+from torch.nn import BCELoss
 
 
 class IoULoss(nn.Module):
