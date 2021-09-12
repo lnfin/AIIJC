@@ -1,21 +1,72 @@
 import streamlit as st
+import gdown
 from PIL import Image
 import numpy as np
 import custom.models
+from config import Cfg
+from production import get_predictions
 from zipfile import ZipFile
+import nibabel as nib
+import random
+import string
 import os
+import base64
 import cv2
-from production import read_files, get_setup, make_masks, create_folder, make_legend
-import shutil
+
+drive_link = 'https://drive.google.com/uc?id=1-tadxTBTRyru10rNNI0y4UcdntMK7hdh'
 
 
-@st.cache()
-def cached_get_setup():
-    return get_setup()
+@st.cache
+def download_model():
+    gdown.cached_download(drive_link, quiet=False)
+
+
+def get_random_string():
+    return ''.join(random.choice(string.ascii_lowercase) for _ in range(7)) + '/'
+
+
+def read_files(files):
+    folder_name = get_random_string()
+    path = 'images/' + folder_name
+    os.mkdir(path)
+    imgs = list()
+    for file in files:
+        imgs.append([])
+        if '.nii' in file.name:
+            nii_path = path + file.name
+            open(nii_path, 'wb').write(file.getvalue())
+            images = nib.load(nii_path)
+            images = np.array(images.dataobj)
+            images = np.moveaxis(images, -1, 0)
+            os.remove(nii_path)
+
+            for idx, image in enumerate(images):
+                image = window_image(image, -600, 1500)
+                image += abs(np.min(image))
+                image = image / np.max(image)
+                image_path = path + file.name.split('.')[0] + '.png'
+                cv2.imwrite(image_path, image * 255)
+
+                imgs[-1].append(image_path)
+
+        else:
+            with open(path + file.name, 'wb') as f:
+                f.write(file.getvalue())
+
+            imgs[-1].append(path + file.name)
+    return imgs, folder_name
+
+
+def window_image(image, window_center, window_width):
+    img_min = window_center - window_width // 2
+    img_max = window_center + window_width // 2
+    window_image = image.copy()
+    window_image[window_image < img_min] = img_min
+    window_image[window_image > img_max] = img_max
+    return window_image
 
 
 def main():
-    models, transforms = cached_get_setup()
     st.markdown(
         f"""
     <style>
@@ -40,8 +91,9 @@ def main():
     """,
         unsafe_allow_html=True,
     )
-    for folder in ['segmentations/', 'images/']:
-        create_folder(folder)
+    # download_model()
+    if not os.path.exists('segmentations/'):
+        os.mkdir('segmentations/')
 
     st.title('Сегментация поражения легких коронавирусной пневмонией')
 
@@ -49,83 +101,58 @@ def main():
     filenames = st.file_uploader('Выберите или ператащите сюда снимки', type=['png', 'jpeg', 'jpg', '.nii', '.nii.gz'],
                                  accept_multiple_files=True)
 
-    multi_class = st.checkbox(label='Мульти-классовая сегментация', value=False)
-    show_legend = st.checkbox(label='Легенда на картинке', value=False)
+    multi_class = st.checkbox(label='Мульти-классовая сегментация', value=True)
 
     if st.button('Загрузить') and filenames:
-        paths, folder_name = read_files(filenames)
+        print(filenames)
+        images, folder_name = read_files(filenames)
 
-        if not paths:
-            st.error('Неправильный формат или название файла')
-        else:
-            user_dir = "segmentations/" + folder_name
+        user_dir = "segmentations/" + folder_name
+        os.mkdir(user_dir)
 
-            # creating folders
-            create_folder(user_dir)
-            create_folder(os.path.join(user_dir, 'segmentations'))
-            create_folder(os.path.join(user_dir, 'annotations'))
+        cfg = Cfg(multi_class)
+        zip_obj = ZipFile('segmentations.zip', 'w')
+        with st.expander("Информация о каждом фото"):
+            info = st.info('Делаем предсказания, пожалуйста, подождите')
+            for image_list in images:
+                for filename, pred in zip(image_list[:2], get_predictions(cfg, image_list[:2])):
+                    info.empty()
+                    st.markdown(f'<h3>{filename.split("/")[-1]}</h3>', unsafe_allow_html=True)
 
-            zip_obj = ZipFile(user_dir + 'segmentations.zip', 'w')
-            with st.expander("Информация о каждом фото"):
-                info = st.info('Делаем предсказания, пожалуйста, подождите')
-                for _paths in paths:
-                    for img, annotation, original_path in make_masks(_paths, models, transforms, multi_class):
-                        name = original_path.split('/')[-1].split('.')[0]
-                        name = name.replace('\\', '/')
+                    original = np.array(Image.open(filename))
+                    col1, col2 = st.columns(2)
+                    col1.header("Оригинал")
+                    col1.image(original, width=350)
 
-                        # saving annotation
-                        annotation_path = os.path.join(user_dir, 'annotations', name + '_annotation.txt')
-                        with open(annotation_path, mode='w') as f:
-                            f.write(annotation)
+                    to_img = pred * 255
+                    image_path = user_dir + filename.split('/')[-1]
+                    cv2.imwrite(image_path, to_img)
+                    zip_obj.write(image_path)
 
-                        info.empty()
+                    col2.header("Сегментация")
+                    col2.image(pred, width=350)
 
-                        # name and annotation
-                        st.markdown(f'<h3>{name}</h3>', unsafe_allow_html=True)
-                        st.markdown(annotation)
+                    st.markdown('<br />', unsafe_allow_html=True)
 
-                        col1, col2 = st.columns(2)
+            zip_obj.close()
 
-                        # original image
-                        original = np.array(Image.open(original_path))
-                        col1.header("Оригинал")
-                        col1.image(original, width=350)
+        with st.expander("Скачать сегментации"):
+            with open('segmentations.zip', 'rb') as file:
+                st.download_button(
+                    label="Архив сегментаций",
+                    data=file,
+                    file_name="segmentations.zip",
+                )
 
-                        # refactoring image
-                        if show_legend:
-                            img = make_legend(img, annotation)
+        for file in os.listdir(user_dir):
+            os.remove(user_dir + file)
 
-                        # saving image
-                        path = os.path.join(user_dir, 'segmentations', name + '_mask.png')
-                        cv2.imwrite(path, img)
+        image_dir = 'images/' + folder_name
+        for file in os.listdir(image_dir):
+            os.remove(image_dir + file)
 
-                        # adding in zip
-                        zip_obj.write(path)
-                        zip_obj.write(annotation_path)
-
-                        # show segmentation
-                        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-                        img = img / 255  # to [0;1] range
-                        # print(img.shape, img.dtype, img)
-                        col2.header("Сегментация")
-                        col2.image(img, width=350)
-
-                        st.markdown('<br />', unsafe_allow_html=True)
-
-                zip_obj.close()
-
-            # download segmentation zip
-            with st.expander("Скачать сегментации"):
-                with open(os.path.join(user_dir, 'segmentations.zip'), 'rb') as file:
-                    st.download_button(
-                        label="Архив сегментаций",
-                        data=file,
-                        file_name="segmentations.zip",
-                    )
-
-                # clearing
-                # shutil.rmtree(os.path.join('segmentations', folder_name))
-                # shutil.rmtree(os.path.join('images', folder_name))
+        os.rmdir(user_dir)
+        os.rmdir(image_dir)
 
 
 if __name__ == '__main__':
