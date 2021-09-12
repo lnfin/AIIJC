@@ -39,17 +39,17 @@ def read_files(files):
             images = np.array(images.dataobj)
             images = np.moveaxis(images, -1, 0)
             os.remove(nii_path)
-            
+
             for idx, image in enumerate(images):
                 image = window_image(image, -600, 1500)
                 image += abs(np.min(image))
                 image = image / np.max(image)
                 image_path = path + file.name.split('.')[0] + '.png'
                 cv2.imwrite(image_path, image * 255)
-                
+
                 imgs[-1].append(image_path)
-                
-        else:        
+
+        else:
             with open(path + file.name, 'wb') as f:
                 f.write(file.getvalue())
 
@@ -68,7 +68,7 @@ def window_image(image, window_center, window_width):
 
 def main():
     st.markdown(
-    f"""
+        f"""
     <style>
         .sidebar .sidebar-content {{
             background: url("https://i.ibb.co/BL3qFQW/background.png");
@@ -106,16 +106,16 @@ def main():
     if st.button('Загрузить') and filenames:
         print(filenames)
         images, folder_name = read_files(filenames)
-        
+
         user_dir = "segmentations/" + folder_name
         os.mkdir(user_dir)
-        
+
         cfg = Cfg(multi_class)
         zip_obj = ZipFile('segmentations.zip', 'w')
         with st.expander("Информация о каждом фото"):
             info = st.info('Делаем предсказания, пожалуйста, подождите')
             for image_list in images:
-                for filename, pred in zip(image_list[:2], get_predictions(cfg, image_list[:2])):    
+                for filename, pred in zip(image_list[:2], get_predictions(cfg, image_list[:2])):
                     info.empty()
                     st.markdown(f'<h3>{filename.split("/")[-1]}</h3>', unsafe_allow_html=True)
 
@@ -123,37 +123,36 @@ def main():
                     col1, col2 = st.columns(2)
                     col1.header("Оригинал")
                     col1.image(original, width=350)
-                    
+
                     to_img = pred * 255
                     image_path = user_dir + filename.split('/')[-1]
                     cv2.imwrite(image_path, to_img)
                     zip_obj.write(image_path)
-                    
+
                     col2.header("Сегментация")
                     col2.image(pred, width=350)
 
                     st.markdown('<br />', unsafe_allow_html=True)
 
             zip_obj.close()
-            
+
         with st.expander("Скачать сегментации"):
             with open('segmentations.zip', 'rb') as file:
                 st.download_button(
                     label="Архив сегментаций",
                     data=file,
                     file_name="segmentations.zip",
-            )
-        
+                )
+
         for file in os.listdir(user_dir):
             os.remove(user_dir + file)
-            
+
         image_dir = 'images/' + folder_name
         for file in os.listdir(image_dir):
             os.remove(image_dir + file)
-            
+
         os.rmdir(user_dir)
         os.rmdir(image_dir)
-
 
 
 if __name__ == '__main__':
