@@ -116,7 +116,8 @@ def run(cfg, use_wandb=True, max_early_stopping=2):
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             best_state_dict = model.state_dict()
-            torch.save(best_state_dict, os.path.join('checkpoints', cfg.model + '_' + cfg.backbone) + '.pth')
+            torch.save(best_state_dict, os.path.join('checkpoints', cfg.model + '_' + cfg.backbone + '_' +
+                                                     str(round(val_loss, 6))) + '.pth')
         if train_loss < last_train_loss and val_loss > last_val_loss:
             early_stopping_flag += 1
             if early_stopping_flag == max_early_stopping:
