@@ -35,13 +35,13 @@ class OneHotEncoder:
 
 class FakeScheduler:
     def __init__(self, *args, **kwargs):
-        pass
+        self.lr = kwargs['lr']
 
     def step(self, *args, **kwargs):
         pass
 
     def get_last_lr(self, *args, **kwargs):
-        return [0]
+        return [self.lr]
 
 
 def get_metric(cfg):
