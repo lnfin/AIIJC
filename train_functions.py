@@ -12,19 +12,11 @@ def foo_():
     time.sleep(0.3)
 
 
-range_ = range(0, 10)
-total = len(range_)
-
-with tqdm(total=total, position=0, leave=True) as pbar:
-    for i in tqdm((foo_, range_), position=0, leave=True):
-        pbar.update()
-
-
 def train_epoch(model, train_dl, encoder, criterion, metric, optimizer, scheduler, device):
     model.train()
     loss_sum = 0
     score_sum = 0
-    with tqdm(total=total, position=0, leave=True) as pbar:
+    with tqdm(total=len(train_dl), position=0, leave=True) as pbar:
         for X, y in tqdm(train_dl, position=0, leave=True):
             pbar.update()
             X = X.to(device)
@@ -53,21 +45,23 @@ def eval_epoch(model, val_dl, encoder, criterion, metric, device):
     model.eval()
     loss_sum = 0
     score_sum = 0
-    for i, (X, y) in enumerate(val_dl):
-        X = X.to(device)
-        if len(torch.unique(X)) == 1:
-            continue
-        if encoder is not None:
-            y = encoder(y)
-        y = y.squeeze()
-        y = y.to(device)
+    with tqdm(total=len(val_dl), position=0, leave=True) as pbar:
+        for X, y in tqdm(val_dl, position=0, leave=True):
+            pbar.update()
+            X = X.to(device)
+            if len(torch.unique(X)) == 1:
+                continue
+            if encoder is not None:
+                y = encoder(y)
+            y = y.squeeze()
+            y = y.to(device)
 
-        with torch.no_grad():
-            output = model(X)
-            loss = criterion(output, y).item()
-            score = metric(output, y).mean().item()
-            loss_sum += loss
-            score_sum += score
+            with torch.no_grad():
+                output = model(X)
+                loss = criterion(output, y).item()
+                score = metric(output, y).mean().item()
+                loss_sum += loss
+                score_sum += score
     return loss_sum / len(val_dl), score_sum / len(val_dl)
 
 
