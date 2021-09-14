@@ -120,7 +120,7 @@ def run(cfg, model_name, use_wandb=True, max_early_stopping=2):
                 early_stopping_flag += 1
             if early_stopping_flag == max_early_stopping:
                 print('<<< EarlyStopping >>>')
-            break
+                break
         last_train_loss = train_loss
         last_val_loss = val_loss
     model.load_state_dict(best_state_dict)
