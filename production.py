@@ -23,7 +23,6 @@ class ProductionCovid19Dataset(Dataset):
         if self.transform:
             transformed = self.transform(image=image)
             image = transformed['image']
-        assert image.shape == (512, 512), "Images not 512x512"
         image = torch.from_numpy(np.array([image], dtype=np.float))
         image = image.type(torch.FloatTensor)
         return image, 'None'

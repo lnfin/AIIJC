@@ -4,35 +4,48 @@ from utils import get_scheduler, get_model, get_criterion, get_optimizer, get_me
 from data_functions import get_loaders
 from utils import OneHotEncoder
 import wandb
+from tqdm import tqdm
+import time
+
+
+def foo_():
+    time.sleep(0.3)
+
+
+range_ = range(0, 10)
+total = len(range_)
+
+with tqdm(total=total, position=0, leave=True) as pbar:
+    for i in tqdm((foo_, range_), position=0, leave=True):
+        pbar.update()
 
 
 def train_epoch(model, train_dl, encoder, criterion, metric, optimizer, scheduler, device):
     model.train()
     loss_sum = 0
     score_sum = 0
-    visual_count = len(train_dl) // 10
-    for i, (X, y) in enumerate(train_dl):
-        X = X.to(device)
-        if len(torch.unique(X)) == 1:
-            continue
-        if encoder is not None:
-            y = encoder(y)
-        y = y.squeeze(4)
-        y = y.to(device)
+    with tqdm(total=total, position=0, leave=True) as pbar:
+        for X, y in tqdm(train_dl, position=0, leave=True):
+            pbar.update()
+            X = X.to(device)
+            if len(torch.unique(X)) == 1:
+                continue
+            if encoder is not None:
+                y = encoder(y)
+            y = y.squeeze(4)
+            y = y.to(device)
 
-        optimizer.zero_grad()
-        output = model(X)
-        loss = criterion(output, y)
-        loss.backward()
-        optimizer.step()
-        scheduler.step()
+            optimizer.zero_grad()
+            output = model(X)
+            loss = criterion(output, y)
+            loss.backward()
+            optimizer.step()
+            scheduler.step()
 
-        loss = loss.item()
-        score = metric(output, y).mean()
-        loss_sum += loss
-        score_sum += score
-        if (i + 1) % visual_count == 0:
-            print((i + 1) // visual_count, score, loss)
+            loss = loss.item()
+            score = metric(output, y).mean().item()
+            loss_sum += loss
+            score_sum += score
     return loss_sum / len(train_dl), score_sum / len(train_dl)
 
 
@@ -40,7 +53,6 @@ def eval_epoch(model, val_dl, encoder, criterion, metric, device):
     model.eval()
     loss_sum = 0
     score_sum = 0
-    visual_count = len(val_dl) // 10
     for i, (X, y) in enumerate(val_dl):
         X = X.to(device)
         if len(torch.unique(X)) == 1:
@@ -53,16 +65,13 @@ def eval_epoch(model, val_dl, encoder, criterion, metric, device):
         with torch.no_grad():
             output = model(X)
             loss = criterion(output, y).item()
-            score = metric(output, y).mean()
+            score = metric(output, y).mean().item()
             loss_sum += loss
             score_sum += score
-
-        if (i + 1) % visual_count == 0:
-            print((i + 1) // visual_count, score, loss)
     return loss_sum / len(val_dl), score_sum / len(val_dl)
 
 
-def run(cfg, use_wandb=True, max_early_stopping=2):
+def run(cfg, model_name, use_wandb=True, max_early_stopping=2):
     torch.cuda.empty_cache()
 
     train_loader, val_loader = get_loaders(cfg)
@@ -72,7 +81,7 @@ def run(cfg, use_wandb=True, max_early_stopping=2):
     model = get_model(cfg)(cfg=cfg).to(device)
     if use_wandb:
         wandb.init(project='Covid19_CT_segmentation_' + str(cfg.dataset_name), entity='aiijcteamname', config=cfg,
-                   name=cfg.model)
+                   name=model_name)
         wandb.watch(model, log_freq=100)
 
     optimizer = get_optimizer(cfg)(model.parameters(), **cfg.optimizer_params)
@@ -97,15 +106,11 @@ def run(cfg, use_wandb=True, max_early_stopping=2):
         train_loss, train_score = train_epoch(model, train_loader, encoder,
                                               criterion, metric,
                                               optimizer, scheduler, device)
-        train_score = train_score.item()
-        print('      Score   |   Loss')
-        # print(f'Train: {train_score:.6f} | {train_loss:.6f}')
-        print('Train', train_score, train_loss)
+        print('      Score    |    Loss')
+        print(f'Train: {train_score:.6f} | {train_loss:.6f}')
         val_loss, val_score = eval_epoch(model, train_loader, encoder,
                                          criterion, metric, device)
-        val_score = val_score.item()
-        # print(f'Val: {val_score:.6f} | {val_loss:.6f)}')
-        print('Val', val_score, val_loss)
+        print(f'Val: {val_score:.6f} | {val_loss:.6f)}', end='\n\n')
         metrics = {'train_score': train_score,
                    'train_loss': train_loss,
                    'val_score': val_score,
@@ -116,13 +121,12 @@ def run(cfg, use_wandb=True, max_early_stopping=2):
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             best_state_dict = model.state_dict()
-            torch.save(best_state_dict, os.path.join('checkpoints', cfg.model + '_' + cfg.backbone + '_' +
-                                                     str(round(val_loss, 6))) + '.pth')
-        if train_loss < last_train_loss and val_loss > last_val_loss:
-            early_stopping_flag += 1
+            torch.save(best_state_dict, os.path.join('checkpoints', model_name + '.pth'))
+            if train_loss < last_train_loss and val_loss > last_val_loss:
+                early_stopping_flag += 1
             if early_stopping_flag == max_early_stopping:
                 print('<<< EarlyStopping >>>')
-                break
+            break
         last_train_loss = train_loss
         last_val_loss = val_loss
     model.load_state_dict(best_state_dict)
