@@ -38,22 +38,23 @@ class DeepLabV3(nn.Module):
     def forward(self, x):
         return self.model(x)
 
-# class DeepLabV3(nn.Module):
-#     base_name = 'deeplabv3_'
-#
-#     def __init__(self, cfg):
-#         super(DeepLabV3, self).__init__()
-#         self.cfg = cfg
-#         self.before_layer = nn.Sequential(nn.Conv2d(self.cfg.in_channels, 3, 1),
-#                                           nn.BatchNorm2d(3),
-#                                           nn.ReLU())
-#
-#         name = self.base_name + self.cfg.backbone
-#         self.model = getattr(sys.modules['torchvision.models.segmentation'], name)(
-#             pretrained=self.cfg.pretrained, progress=True
-#         )
-#
-#     def forward(self, x):
-#         if x.shape[1] != 3:
-#             x = self.before_layer(x)
-#         return torch.softmax(self.model(x)['out'], dim=1)
+
+class OldDeepLabV3(nn.Module):
+    base_name = 'deeplabv3_'
+
+    def __init__(self, cfg):
+        super(OldDeepLabV3, self).__init__()
+        self.cfg = cfg
+        self.before_layer = nn.Sequential(nn.Conv2d(self.cfg.in_channels, 3, 1),
+                                          nn.BatchNorm2d(3),
+                                          nn.ReLU())
+
+        name = self.base_name + self.cfg.backbone
+        self.model = getattr(sys.modules['torchvision.models.segmentation'], name)(
+            pretrained=self.cfg.pretrained, progress=True
+        )
+
+    def forward(self, x):
+        if x.shape[1] != 3:
+            x = self.before_layer(x)
+        return torch.softmax(self.model(x)['out'], dim=1)

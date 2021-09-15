@@ -45,10 +45,15 @@ def get_predictions(cfg, paths):
             output = model(X)
             for pred in output:
                 pred = pred.squeeze().cpu()
-                pred = torch.argmax(torch.sigmoid(pred), 0).float()
+                pred = torch.argmax(pred, 0).float()
                 print(torch.unique(pred))
                 maximum = torch.max(pred)
                 if maximum > 1:
                     pred = pred / maximum
                 print(torch.unique(pred))
                 yield pred.numpy()
+
+
+def percents_of_covid19(lung_mask, covid19_mask):
+    covid19_mask_binarized = covid19_mask >= 1
+    return np.sum(covid19_mask_binarized) / np.sum(lung_mask)
