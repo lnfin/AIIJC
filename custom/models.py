@@ -14,7 +14,7 @@ class Unet(nn.Module):
         self.model = smp.Unet(cfg.backbone, classes=cfg.output_channels, activation='softmax',
                               in_channels=cfg.in_channels)
 
-        for i, x in enumerate(self.model.model.encoder.children()):
+        for i, x in enumerate(self.model.encoder.children()):
             if isinstance(x, torch.nn.Sequential):
                 if cfg.layers_to_freeze:
                     for param in x.parameters():
@@ -35,7 +35,7 @@ class UnetPlusPlus(nn.Module):
         else:
             self.model = smp.UnetPlusPlus(cfg.backbone, classes=cfg.output_channels, activation='softmax',
                                           in_channels=cfg.in_channels, encoder_weights=cfg.encoder_weights)
-        for i, x in enumerate(self.model.model.encoder.children()):
+        for i, x in enumerate(self.model.encoder.children()):
             if isinstance(x, torch.nn.Sequential):
                 if cfg.layers_to_freeze:
                     for param in x.parameters():
