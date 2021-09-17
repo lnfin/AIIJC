@@ -28,6 +28,15 @@ class ProductionCovid19Dataset(Dataset):
         return image, 'None'
 
 
+def window_image(image, window_center, window_width):
+    img_min = window_center - window_width // 2
+    img_max = window_center + window_width // 2
+    window_image = image.copy()
+    window_image[window_image < img_min] = img_min
+    window_image[window_image > img_max] = img_max
+    return window_image
+
+
 def get_predictions(cfg, paths):
     # best_dict потом будет в конфиге
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
