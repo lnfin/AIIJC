@@ -101,7 +101,7 @@ def main():
     filenames = st.file_uploader('Выберите или ператащите сюда снимки', type=['png', 'jpeg', 'jpg', '.nii', '.nii.gz'],
                                  accept_multiple_files=True)
 
-    multi_class = st.checkbox(label='Мульти-классовая сегментация', value=True)
+    multi_class = st.checkbox(label='Мульти-классовая сегментация', value=False)
 
     if st.button('Загрузить') and filenames:
         print(filenames)
