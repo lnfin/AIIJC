@@ -25,7 +25,7 @@ class Cfg:
             self.best_dict = self.model + '_' + self.backbone + '_multi' + '.pth'
             self.output_channels = 4
         else:
-            self.model = 'Unet'
-            self.backbone = 'resnet34'
-            self.best_dict = 'Unet-IoULoss.pth'
+            self.model = 'UnetPlusPlus'
+            self.backbone = 'resnet101'
+            self.best_dict = 'UnetPlusPlus-IoULoss (1).pth'
             self.output_channels = 2
