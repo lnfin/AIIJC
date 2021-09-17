@@ -14,6 +14,13 @@ class Unet(nn.Module):
         self.model = smp.Unet(cfg.backbone, classes=cfg.output_channels, activation='softmax',
                               in_channels=cfg.in_channels)
 
+        for i, x in enumerate(self.model.model.encoder.children()):
+            if isinstance(x, torch.nn.Sequential):
+                if cfg.layers_to_freeze:
+                    for param in x.parameters():
+                        param.requires_grad = False
+                    cfg.layers_to_freeze -= 1
+
     def forward(self, x):
         return self.model(x)
 
@@ -28,6 +35,12 @@ class UnetPlusPlus(nn.Module):
         else:
             self.model = smp.UnetPlusPlus(cfg.backbone, classes=cfg.output_channels, activation='softmax',
                                           in_channels=cfg.in_channels, encoder_weights=cfg.encoder_weights)
+        for i, x in enumerate(self.model.model.encoder.children()):
+            if isinstance(x, torch.nn.Sequential):
+                if cfg.layers_to_freeze:
+                    for param in x.parameters():
+                        param.requires_grad = False
+                    cfg.layers_to_freeze -= 1
 
     def forward(self, x):
         return self.model(x)
@@ -39,6 +52,13 @@ class DeepLabV3(nn.Module):
         self.cfg = cfg
         self.model = smp.DeepLabV3(cfg.backbone, classes=cfg.output_channels, activation='softmax',
                                    in_channels=cfg.in_channels)
+
+        for i, x in enumerate(self.model.encoder.children()):
+            if isinstance(x, torch.nn.Sequential):
+                if cfg.layers_to_freeze:
+                    for param in x.parameters():
+                        param.requires_grad = False
+                    cfg.layers_to_freeze -= 1
 
     def forward(self, x):
         return self.model(x)
@@ -70,8 +90,7 @@ class KiUnet(nn.Module):
     def __init__(self, cfg):
         super(KiUnet, self).__init__()
 
-        self.encoder1 = nn.Conv2d(cfg.in_channels, 16, 3, stride=1,
-                                  padding=1)  # First Layer GrayScale Image , change to input channels to 3 in case of RGB
+        self.encoder1 = nn.Conv2d(cfg.in_channels, 16, 3, stride=1, padding=1)
         self.en1_bn = nn.BatchNorm2d(16)
         self.encoder2 = nn.Conv2d(16, 32, 3, stride=1, padding=1)
         self.en2_bn = nn.BatchNorm2d(32)
@@ -93,7 +112,7 @@ class KiUnet(nn.Module):
         self.def3_bn = nn.BatchNorm2d(8)
 
         self.encoderf1 = nn.Conv2d(1, 16, 3, stride=1,
-                                   padding=1)  # First Layer GrayScale Image , change to input channels to 3 in case of RGB
+                                   padding=1)
         self.enf1_bn = nn.BatchNorm2d(16)
         self.encoderf2 = nn.Conv2d(16, 32, 3, stride=1, padding=1)
         self.enf2_bn = nn.BatchNorm2d(32)
