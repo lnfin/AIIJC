@@ -34,23 +34,22 @@ class Covid19Dataset(Dataset):
 
 def data_generator(cfg):
     image_paths = get_paths(cfg)
+    image_paths = np.asarray(image_paths)
     train_paths, val_paths = [], []
 
     if not cfg.kfold:
         _train_paths, _val_paths = train_test_split(image_paths, test_size=cfg.val_size, random_state=cfg.seed)
-        for paths in _train_paths:
-            train_paths.extend(paths)
-        for paths in _val_paths:
-            val_paths.extend(paths)
-        random.shuffle(train_paths)
-        random.shuffle(val_paths)
-        return train_paths, val_paths
-
-    kf = KFold(n_splits=cfg.n_splits)
-    for i, (train_index, val_index) in enumerate(kf.split(image_paths)):
-        if i + 1 == cfg.fold_number:
-            train_paths = image_paths[train_index]
-            val_paths = image_paths[val_index]
+    else:
+        kf = KFold(n_splits=cfg.n_splits)
+        for i, (train_index, val_index) in enumerate(kf.split(image_paths)):
+            if i + 1 == cfg.fold_number:
+                _train_paths = image_paths[train_index]
+                _val_paths = image_paths[val_index]
+                
+    for paths in _train_paths:
+        train_paths.extend(paths)
+    for paths in _val_paths:
+        val_paths.extend(paths)
     random.shuffle(train_paths)
     random.shuffle(val_paths)
     return train_paths, val_paths
