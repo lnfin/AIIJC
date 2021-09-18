@@ -1,5 +1,4 @@
 import torch
-from config import Cfg
 from torch import nn
 import sys
 from torchvision import models
