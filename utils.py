@@ -125,7 +125,7 @@ def show_segmentation(cfg, loader, best_dict, n=1, size=16, device=None):
             y = y.to(device)
 
             output = model(X).to(device)
-            output = torch.argmax(torch.sigmoid(output), 1).float()
+            output = torch.argmax(output, 1).float()
             for i in range(len(X)):
                 if len(torch.unique(y[i])) == 1:
                     continue
