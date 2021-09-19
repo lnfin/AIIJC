@@ -72,7 +72,7 @@ def main():
 
         model = None
         cfg = BinaryModelConfig
-        if multi_model:
+        if multi_class:
             model = multi_model
             cfg = MultiModelConfig
 
