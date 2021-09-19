@@ -5,6 +5,10 @@ import custom.models
 import cv2
 import torch
 import numpy as np
+import nibabel as nib
+import random
+import string
+import os
 
 
 class ProductionCovid19Dataset(Dataset):
@@ -26,6 +30,46 @@ class ProductionCovid19Dataset(Dataset):
         image = torch.from_numpy(np.array([image], dtype=np.float))
         image = image.type(torch.FloatTensor)
         return image, 'None'
+
+
+def get_folder_name():
+    return ''.join(random.choice(string.ascii_lowercase) for _ in range(7)) + '/'
+
+
+def read_files(files):
+    folder_name = get_folder_name()
+    path = 'images/' + folder_name
+    if not os.path.exists(path):
+        os.mkdir(path)
+    imgs = list()
+    for file in files:
+        imgs.append([])
+        if file.name.endswith('.nii'):
+            nii_path = path + file.name
+            open(nii_path, 'wb').write(file.getvalue())
+            try:
+                images = nib.load(nii_path)
+            except:
+                return None
+            images = np.array(images.dataobj)
+            images = np.moveaxis(images, -1, 0)
+            os.remove(nii_path)
+
+            for image in images:
+                image = window_image(image, -600, 1500)
+                image += abs(np.min(image))
+                image = image / np.max(image)
+                image_path = path + file.name.split('.')[0] + '.png'
+                cv2.imwrite(image_path, image * 255)
+
+                imgs[-1].append(image_path)
+
+        else:
+            with open(path + file.name, 'wb') as f:
+                f.write(file.getvalue())
+
+            imgs[-1].append(path + file.name)
+    return imgs, folder_name
 
 
 def window_image(image, window_center, window_width):
@@ -66,3 +110,4 @@ def get_predictions(cfg, paths):
 def percents_of_covid19(lung_mask, covid19_mask):
     covid19_mask_binarized = covid19_mask >= 1
     return np.sum(covid19_mask_binarized) / np.sum(lung_mask)
+
