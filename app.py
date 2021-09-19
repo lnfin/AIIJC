@@ -3,14 +3,15 @@ import gdown
 from PIL import Image
 import numpy as np
 import custom.models
-from config import Cfg
+from config import BinaryModelConfig, MultiModelConfig, LungsModelConfig
+from utils import get_model
 from production import get_predictions
 from zipfile import ZipFile
-
+import torch
 import os
 import base64
 import cv2
-from production import read_files
+from production import read_files, get_models
 
 drive_link = 'https://drive.google.com/uc?id=1-tadxTBTRyru10rNNI0y4UcdntMK7hdh'
 
@@ -58,9 +59,22 @@ def main():
 
     multi_class = st.checkbox(label='Мульти-классовая сегментация', value=False)
 
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+    binary_model, multi_model, lungs_model = get_models()
+    binary_model = binary_model.to(device)
+    multi_model = multi_model.to(device)
+    lungs_model = lungs_model.to(device)
+
     if st.button('Загрузить') and filenames:
         print(filenames)
         images, folder_name = read_files(filenames)
+
+        model = None
+        cfg = BinaryModelConfig
+        if multi_model:
+            model = multi_model
+            cfg = MultiModelConfig
 
         if not images:
             st.error('Неправильный формат или название файла')
@@ -68,12 +82,13 @@ def main():
             user_dir = "segmentations/" + folder_name
             os.mkdir(user_dir)
 
-            cfg = Cfg(multi_class)
             zip_obj = ZipFile(user_dir + 'segmentations.zip', 'w')
             with st.expander("Информация о каждом фото"):
                 info = st.info('Делаем предсказания, пожалуйста, подождите')
                 for image_list in images:
-                    for filename, pred in zip(image_list[:2], get_predictions(cfg, image_list[:2])):
+                    for filename, pred in zip(image_list[:2],
+                                              get_predictions(cfg, binary_model, lungs_model, image_list[:2], device,
+                                                              multi_model=model)):
                         info.empty()
                         st.markdown(f'<h3>{filename.split("/")[-1]}</h3>', unsafe_allow_html=True)
 

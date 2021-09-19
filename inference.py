@@ -1,17 +1,27 @@
 import argparse
-from config import Cfg
 from production import get_predictions
 import os
 import nibabel as nib
 from production import window_image
 import numpy as np
 import cv2
+from production import get_models
+from config import BinaryModelConfig, MultiModelConfig, LungsModelConfig
+import torch
 
 
-def data_to_paths(data):
-    local_path = 'images/'
+def data_to_paths(data, save_folder):
+    if not os.path.exists(os.path.join(save_folder, 'slices')):
+        os.mkdir(os.path.join(save_folder, 'slices'))
+    if not os.path.exists(os.path.join(save_folder, 'segmentations')):
+        os.mkdir(os.path.join(save_folder, 'segmentations'))
     all_paths = []
+    if not os.path.isdir(data):
+        data = [data]
+    else:
+        data = [os.path.join(data, x) for x in os.listdir(data)]
     for path in data:
+        print(path)
         if not os.path.exists(path):
             print(f'Path \"{path}\" not exists')
             continue
@@ -19,7 +29,7 @@ def data_to_paths(data):
             all_paths.append(path)
         elif path.endswith('.nii') or path.endswith('.nii.gz'):
             paths = []
-            nii_name = path.split('/')[-1].split('.')[0]
+            nii_name = path.split('\\')[-1].split('.')[0]
             images = nib.load(path)
             images = np.array(images.dataobj)
             images = np.moveaxis(images, -1, 0)
@@ -28,18 +38,19 @@ def data_to_paths(data):
                 image = window_image(image, -600, 1500)
                 image += abs(np.min(image))
                 image = image / np.max(image)
-                image_path = os.path.join(local_path, nii_name + str(i) + '.png')
+                image_path = os.path.join(save_folder, 'slices', nii_name + '_' + str(i) + '.png')
                 cv2.imwrite(image_path, image * 255)
+                # print(image_path)
 
                 paths.append(image_path)
-            all_paths.extend(path)
+            all_paths.extend(paths)
         else:
             print(f'Path \"{path}\" is not supported format')
     return all_paths
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--path",
+parser.add_argument("--data",
                     help="image or folder with CT-images,"
                          "supported image formats: png, jpg, jpeg"
                          "also you can use .nii or .nii.gz formats",
@@ -48,10 +59,29 @@ parser.add_argument("--mode",
                     choices=["binary", "multi"],
                     default="binary",
                     help="if \"multi\" shows ground-glass opacities and consolidation")
+parser.add_argument("--save_folder",
+                    help="folder to save segmentations and images",
+                    default="example")
 args = parser.parse_args()
 
-cfg = Cfg(args.mode == "multi")
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+binary_model, multi_model, lungs_model = get_models()
+binary_model = binary_model.to(device)
+multi_model = multi_model.to(device)
+lungs_model = lungs_model.to(device)
 
-paths = data_to_paths(args.data)
-for pred in get_predictions(cfg, paths):
-    print('prediction')
+model = None
+cfg = BinaryModelConfig
+if args.mode == 'multi':
+    model = multi_model
+    cfg = MultiModelConfig
+
+paths = data_to_paths(args.data, args.save_folder)
+for path, pred in zip(paths, get_predictions(cfg,
+                                             binary_model, lungs_model,
+                                             paths, device,
+                                             multi_model=model)):
+    to_img = pred * 255
+    path = os.path.join('C:\\', *path[2:].split('\\')[:-2], 'segmentations', path.split('\\')[-1][:-4] + '_mask.png')
+    print(path)
+    cv2.imwrite(path, to_img)

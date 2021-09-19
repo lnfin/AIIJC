@@ -1,9 +1,8 @@
-class Cfg:
-    seed = 0xD153A53
-    pretrained = True
+class BinaryModelConfig:
+    seed = 42
     in_channels = 1
-    batch_size = 4
-
+    batch_size = 1
+    layers_to_freeze = 0
     pre_transforms = [
         dict(
             name="Resize",
@@ -14,18 +13,59 @@ class Cfg:
             )
         ),
     ]
-
     augmentations = []
     post_transforms = []
+    output_channels = 2
 
-    def __init__(self, multi=True):
-        if multi:
-            self.model = 'DeepLabV3'
-            self.backbone = 'resnet101'
-            self.best_dict = self.model + '_' + self.backbone + '_multi' + '.pth'
-            self.output_channels = 4
-        else:
-            self.model = 'UnetPlusPlus'
-            self.backbone = 'resnet101'
-            self.best_dict = 'UnetPlusPlus-IoULoss (1).pth'
-            self.output_channels = 2
+    model = 'UnetPlusPlus'
+    backbone = 'resnext101_32x4d'
+    encoder_weights = 'swsl'
+    best_dict = 'checkpoints/Binary.pth'
+
+
+class MultiModelConfig:
+    seed = 42
+    in_channels = 1
+    batch_size = 1
+    layers_to_freeze = 0
+    pre_transforms = [
+        dict(
+            name="Resize",
+            params=dict(
+                height=512,
+                width=512,
+                p=1.0,
+            )
+        ),
+    ]
+    augmentations = []
+    post_transforms = []
+    output_channels = 4
+
+    model = 'UnetPlusPlus'
+    backbone = 'resnet101'
+    best_dict = 'checkpoints/MultiClass.pth'
+
+
+class LungsModelConfig:
+    seed = 42
+    in_channels = 1
+    batch_size = 1
+    layers_to_freeze = 0
+    pre_transforms = [
+        dict(
+            name="Resize",
+            params=dict(
+                height=512,
+                width=512,
+                p=1.0,
+            )
+        ),
+    ]
+    augmentations = []
+    post_transforms = []
+    output_channels = 2
+
+    model = 'UnetPlusPlus'
+    backbone = 'resnet101'
+    best_dict = 'checkpoints/Lungs.pth'

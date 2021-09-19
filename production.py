@@ -9,6 +9,23 @@ import nibabel as nib
 import random
 import string
 import os
+from config import BinaryModelConfig, MultiModelConfig, LungsModelConfig
+
+
+def get_models():
+    binary_model = get_model(BinaryModelConfig)(cfg=BinaryModelConfig)
+    binary_model.load_state_dict(torch.load(BinaryModelConfig.best_dict, map_location=torch.device('cpu')))
+    binary_model.eval()
+
+    multi_model = get_model(MultiModelConfig)(cfg=MultiModelConfig)
+    multi_model.load_state_dict(torch.load(MultiModelConfig.best_dict, map_location=torch.device('cpu')))
+    multi_model.eval()
+
+    lungs_model = get_model(LungsModelConfig)(cfg=LungsModelConfig)
+    lungs_model.load_state_dict(torch.load(LungsModelConfig.best_dict, map_location=torch.device('cpu')))
+    lungs_model.eval()
+
+    return binary_model, multi_model, lungs_model
 
 
 class ProductionCovid19Dataset(Dataset):
@@ -81,12 +98,8 @@ def window_image(image, window_center, window_width):
     return window_image
 
 
-def get_predictions(cfg, paths):
+def get_predictions(cfg, binary_model, lung_model, paths, device, multi_model=None):
     # best_dict потом будет в конфиге
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = get_model(cfg)(cfg=cfg).to(device)
-    model.load_state_dict(torch.load(cfg.best_dict, map_location=torch.device('cpu')))
-    model.eval()
     _, transform = get_transforms(cfg)
     dataset = ProductionCovid19Dataset(paths, transform=transform)
     dataloader = DataLoader(dataset, batch_size=cfg.batch_size, drop_last=False)
@@ -95,19 +108,25 @@ def get_predictions(cfg, paths):
         X = X / torch.max(X)
 
         with torch.no_grad():
-            output = model(X)
-            for pred in output:
+            output = binary_model(X)
+            lungs = lung_model(X)
+            if multi_model:
+                multi_output = multi_model(X)
+                multi_pred = multi_output.squeeze().cpu()
+                multi_pred = torch.argmax(multi_pred, 0).float()
+            for pred, lung in zip(output, lungs):
                 pred = pred.squeeze().cpu()
                 pred = torch.argmax(pred, 0).float()
-                print(torch.unique(pred))
-                maximum = torch.max(pred)
-                if maximum > 1:
-                    pred = pred / maximum
-                print(torch.unique(pred))
+
+                lung = lung.squeeze().cpu()
+                lung = torch.argmax(lung, 0).float()
+                if multi_model:
+                    pred = multi_pred * pred
+                    pred = (pred % 3) / 3
+                pred = pred * lung
                 yield pred.numpy()
 
 
 def percents_of_covid19(lung_mask, covid19_mask):
     covid19_mask_binarized = covid19_mask >= 1
     return np.sum(covid19_mask_binarized) / np.sum(lung_mask)
-
