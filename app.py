@@ -3,9 +3,7 @@ from PIL import Image
 import numpy as np
 import custom.models
 from zipfile import ZipFile
-import torch
 import os
-import base64
 import cv2
 from production import read_files, get_setup, make_masks, create_folder
 import shutil
@@ -36,10 +34,8 @@ def main():
     """,
         unsafe_allow_html=True,
     )
-    # download_model()
     for folder in ['segmentations/', 'images/']:
-        if not os.path.exists(folder):
-            os.mkdir(folder)
+        create_folder(folder)
 
     st.title('Сегментация поражения легких коронавирусной пневмонией')
 
@@ -51,12 +47,14 @@ def main():
     models, transforms = get_setup()
 
     if st.button('Загрузить') and filenames:
-        images, folder_name = read_files(filenames)
+        paths, folder_name = read_files(filenames)
 
-        if not images:
+        if not paths:
             st.error('Неправильный формат или название файла')
         else:
             user_dir = "segmentations/" + folder_name
+
+            # creating folders
             create_folder(user_dir)
             create_folder(os.path.join(user_dir, 'segmentations'))
             create_folder(os.path.join(user_dir, 'annotations'))
@@ -64,38 +62,47 @@ def main():
             zip_obj = ZipFile(user_dir + 'segmentations.zip', 'w')
             with st.expander("Информация о каждом фото"):
                 info = st.info('Делаем предсказания, пожалуйста, подождите')
-                for paths in images:
-                    for img, annotation, path in make_masks(paths[:2], models, transforms, multi_class):
-                        original_path = path
-                        name = path.split('/')[-1].split('.')[0]
+                for _paths in paths:
+                    for img, annotation, original_path in make_masks(_paths, models, transforms, multi_class):
+                        name = original_path.split('/')[-1].split('.')[0]
                         name = name.replace('\\', '/')
 
+                        # saving annotation
                         annotation_path = os.path.join(user_dir, 'annotations', name + '_annotation.txt')
                         with open(annotation_path, mode='w') as f:
                             f.write(annotation)
-                        path = os.path.join(user_dir, 'segmentations', name + '_mask.png')
 
                         info.empty()
+
+                        # name and annotation
                         st.markdown(f'<h3>{name}</h3>', unsafe_allow_html=True)
                         st.markdown(annotation)
 
-                        original = np.array(Image.open(original_path))
                         col1, col2 = st.columns(2)
+
+                        # original image
+                        original = np.array(Image.open(original_path))
                         col1.header("Оригинал")
                         col1.image(original, width=350)
 
+                        # saving image
+                        path = os.path.join(user_dir, 'segmentations', name + '_mask.png')
                         cv2.imwrite(path, img)
+
+                        # adding in zip
                         zip_obj.write(path)
                         zip_obj.write(annotation_path)
 
+                        # show segmentation
+                        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB) / 255  # to RGB and [0; 1] range
                         col2.header("Сегментация")
-                        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-                        col2.image(img / 255, width=350)
+                        col2.image(img, width=350)
 
                         st.markdown('<br />', unsafe_allow_html=True)
 
                 zip_obj.close()
 
+            # download segmentation zip
             with st.expander("Скачать сегментации"):
                 with open(os.path.join(user_dir, 'segmentations.zip'), 'rb') as file:
                     st.download_button(
@@ -104,6 +111,7 @@ def main():
                         file_name="segmentations.zip",
                     )
 
+                # clearing
                 # shutil.rmtree(os.path.join('segmentations', folder_name))
                 # shutil.rmtree(os.path.join('images', folder_name))
 

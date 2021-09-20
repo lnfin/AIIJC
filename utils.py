@@ -15,35 +15,6 @@ def set_seed(seed=0xD153A53):
     os.environ['PYTHONHASHSEED'] = str(seed)
 
 
-class OneHotEncoder:
-    def __init__(self, cfg):
-        self.zeros = [0] * cfg.num_classes
-
-    def encode_num(self, x):
-        zeros = self.zeros.copy()
-        zeros[int(x)] = 1
-        return zeros
-
-    def __call__(self, y):
-        y = np.array(y)
-        y = np.expand_dims(y, -1)
-        y = np.apply_along_axis(self.encode_num, -1, y)
-        y = np.swapaxes(y, -1, 1)
-        y = np.ascontiguousarray(y)
-        return torch.Tensor(y)
-
-
-class FakeScheduler:
-    def __init__(self, *args, **kwargs):
-        self.lr = kwargs['lr']
-
-    def step(self, *args, **kwargs):
-        pass
-
-    def get_last_lr(self, *args, **kwargs):
-        return [self.lr]
-
-
 def get_metric(cfg):
     return getattr(sys.modules['custom.metrics'], cfg.metric)
 
@@ -82,7 +53,7 @@ def get_paths_1_dataset(data_folder, dataset_name):
         paths.append(_paths)
         return paths
 
-    #
+    # adding paths by patients
     for name in sorted(os.listdir(paths_folder)):
         path = os.path.join(paths_folder, name)
         number_of_patient = int(name.split('_')[0])
@@ -106,3 +77,32 @@ def get_paths(cfg):
     # if solo dataset
     paths = get_paths_1_dataset(cfg.data_folder, cfg.dataset_name)
     return paths
+
+
+class OneHotEncoder:
+    def __init__(self, cfg):
+        self.zeros = [0] * cfg.num_classes
+
+    def encode_num(self, x):
+        zeros = self.zeros.copy()
+        zeros[int(x)] = 1
+        return zeros
+
+    def __call__(self, y):
+        y = np.array(y)
+        y = np.expand_dims(y, -1)
+        y = np.apply_along_axis(self.encode_num, -1, y)
+        y = np.swapaxes(y, -1, 1)
+        y = np.ascontiguousarray(y)
+        return torch.Tensor(y)
+
+
+class FakeScheduler:
+    def __init__(self, *args, **kwargs):
+        self.lr = kwargs['lr']
+
+    def step(self, *args, **kwargs):
+        pass
+
+    def get_last_lr(self, *args, **kwargs):
+        return [self.lr]

@@ -95,9 +95,9 @@ def read_files(files):
     if not os.path.exists(path):
         os.mkdir(path)
 
-    imgs = []
+    paths = []
     for file in files:
-        imgs.append([])
+        paths.append([])
         # if NIfTI we should get slices
         if file.name.endswith('.nii') or file.name.endswith('.nii.gz'):
             # saving file from user
@@ -120,14 +120,14 @@ def read_files(files):
                 # saving
                 image_path = path + file.name.split('.')[0] + '.png'
                 cv2.imwrite(image_path, image * 255)
-                imgs[-1].append(image_path)
+                paths[-1].append(image_path)
 
         else:
             with open(path + file.name, 'wb') as f:
                 f.write(file.getvalue())
 
-            imgs[-1].append(path + file.name)
-    return imgs, folder_name
+            paths[-1].append(path + file.name)
+    return paths, folder_name
 
 
 def create_folder(path):
