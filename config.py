@@ -1,7 +1,6 @@
 class BinaryModelConfig:
     seed = 42
     in_channels = 1
-    batch_size = 1
     layers_to_freeze = 0
     pre_transforms = [
         dict(
@@ -26,7 +25,6 @@ class BinaryModelConfig:
 class MultiModelConfig:
     seed = 42
     in_channels = 1
-    batch_size = 1
     layers_to_freeze = 0
     pre_transforms = [
         dict(
@@ -50,7 +48,6 @@ class MultiModelConfig:
 class LungsModelConfig:
     seed = 42
     in_channels = 1
-    batch_size = 1
     layers_to_freeze = 0
     pre_transforms = [
         dict(

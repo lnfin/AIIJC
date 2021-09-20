@@ -87,7 +87,7 @@ def main():
                 info = st.info('Делаем предсказания, пожалуйста, подождите')
                 for image_list in images:
                     for filename, pred in zip(image_list[:2],
-                                              get_predictions(cfg, binary_model, lungs_model, image_list[:2], device,
+                                              get_predictions(binary_model, lungs_model, image_list[:2], device,
                                                               multi_model=model)):
                         info.empty()
                         st.markdown(f'<h3>{filename.split("/")[-1]}</h3>', unsafe_allow_html=True)

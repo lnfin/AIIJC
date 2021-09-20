@@ -12,20 +12,22 @@ import os
 from config import BinaryModelConfig, MultiModelConfig, LungsModelConfig
 
 
-def get_models():
-    binary_model = get_model(BinaryModelConfig)(cfg=BinaryModelConfig)
-    binary_model.load_state_dict(torch.load(BinaryModelConfig.best_dict, map_location=torch.device('cpu')))
-    binary_model.eval()
+def get_setup():
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    models = []
+    transforms = []
+    for cfg in [BinaryModelConfig, MultiModelConfig, LungsModelConfig]:
+        # getting model
+        model = get_model(cfg)(cfg)
+        model.load_state_dict(torch.load(cfg.best_dict, map_location=torch.device('cpu')))
+        model.to(device)
+        model.eval()
+        models.append(model)
 
-    multi_model = get_model(MultiModelConfig)(cfg=MultiModelConfig)
-    multi_model.load_state_dict(torch.load(MultiModelConfig.best_dict, map_location=torch.device('cpu')))
-    multi_model.eval()
-
-    lungs_model = get_model(LungsModelConfig)(cfg=LungsModelConfig)
-    lungs_model.load_state_dict(torch.load(LungsModelConfig.best_dict, map_location=torch.device('cpu')))
-    lungs_model.eval()
-
-    return binary_model, multi_model, lungs_model
+        # getting transforms
+        _, test_transforms = get_transforms(cfg)
+        transforms.append(test_transforms)
+    return models, transforms
 
 
 class ProductionCovid19Dataset(Dataset):
@@ -64,10 +66,7 @@ def read_files(files):
         if file.name.endswith('.nii'):
             nii_path = path + file.name
             open(nii_path, 'wb').write(file.getvalue())
-            try:
-                images = nib.load(nii_path)
-            except:
-                return None
+            images = nib.load(nii_path)
             images = np.array(images.dataobj)
             images = np.moveaxis(images, -1, 0)
             os.remove(nii_path)
@@ -98,42 +97,41 @@ def window_image(image, window_center, window_width):
     return window_image
 
 
-def get_predictions(cfg, binary_model, lung_model, paths, device, multi_model=None):
-    # best_dict потом будет в конфиге
-    _, transform = get_transforms(cfg)
-    dataset = ProductionCovid19Dataset(paths, transform=transform)
-    dataloader = DataLoader(dataset, batch_size=cfg.batch_size, drop_last=False)
+def create_folder(path):
+    if not os.path.exists(path):
+        os.mkdir(path)
+
+
+def get_predictions(paths, models, transforms, multi_class=True):
+    binary_model, multi_model, lung_model = models
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    dataloader = DataLoader(ProductionCovid19Dataset(paths, transform=transforms[0]), batch_size=1, drop_last=False)
     for X, _ in dataloader:
         X = X.to(device)
         X = X / torch.max(X)
 
         with torch.no_grad():
-            output = binary_model(X)
-            lungs = lung_model(X)
-            if multi_model:
+            pred = binary_model(X)
+            lung = lung_model(X)
+
+            img = X.squeeze().cpu()
+            pred = pred.squeeze().cpu()
+            pred = torch.argmax(pred, 0).float()
+            lung = lung.squeeze().cpu()
+            lung = torch.argmax(lung, 0).float()
+
+            if multi_class:
                 multi_output = multi_model(X)
                 multi_pred = multi_output.squeeze().cpu()
                 multi_pred = torch.argmax(multi_pred, 0).float()
-            for img, pred, lung in zip(X, output, lungs):
-                img = img.squeeze().cpu()
-                pred = pred.squeeze().cpu()
-                pred = torch.argmax(pred, 0).float()
-
-                lung = lung.squeeze().cpu()
-                lung = torch.argmax(lung, 0).float()
-                if multi_model:
-                    pred = multi_pred * pred
-                    pred = (pred % 3)
-                pred = pred / 2
-                # pred = pred * lung
-                yield img.numpy(), pred.numpy(), lung.numpy()
+                pred = multi_pred * pred
+                pred = (pred % 3)
+            pred = pred / 2
+            yield img.numpy(), pred.numpy(), lung.numpy()
 
 
-def make_masks(cfg, paths, binary_model, lungs_model, device, multi_model=None):
-    for path, (img, pred, lung) in zip(paths, get_predictions(cfg,
-                                                              binary_model, lungs_model,
-                                                              paths, device,
-                                                              multi_model=multi_model)):
+def make_masks(paths, models, transforms, multi_class=True):
+    for path, (img, pred, lung) in zip(paths, get_predictions(paths, models, transforms, multi_class)):
         img0 = np.zeros_like(img)
         img1 = (pred == 0.5)
         img2 = (pred == 1)
@@ -142,7 +140,8 @@ def make_masks(cfg, paths, binary_model, lungs_model, device, multi_model=None):
         if lung_sum == 0:  # Костыль-фича
             lung_sum = img.shape[1] * img.shape[2]
             lung_sum = lung_sum / 3.5
-        if multi_model:
+            print('lungs not found')
+        if multi_class:
             ground_glass = np.sum(img1) / lung_sum
             if ground_glass == np.nan or ground_glass == np.inf:
                 ground_glass = 0
