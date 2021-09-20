@@ -21,8 +21,7 @@ def get_setup():
     for cfg in [BinaryModelConfig, MultiModelConfig, LungsModelConfig]:
         # getting model
         model = get_model(cfg)(cfg)
-        model.load_state_dict(torch.load(cfg.best_dict, map_location=torch.device('cpu')))
-        model.to(device)
+        model.load_state_dict(torch.load(cfg.best_dict, map_location=device))
         model.eval()
         models.append(model)
 

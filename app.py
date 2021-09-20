@@ -9,7 +9,12 @@ from production import read_files, get_setup, make_masks, create_folder
 import shutil
 
 
+@st.cache
+def cached_get_setup():
+    return get_setup()
+
 def main():
+    models, transforms = cached_get_setup()
     st.markdown(
         f"""
     <style>
@@ -44,7 +49,7 @@ def main():
                                  accept_multiple_files=True)
 
     multi_class = st.checkbox(label='Мульти-классовая сегментация', value=False)
-    models, transforms = get_setup()
+    
 
     if st.button('Загрузить') and filenames:
         paths, folder_name = read_files(filenames)
