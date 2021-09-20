@@ -37,6 +37,7 @@ def generate_folder_name():
 
 def data_to_paths(data, save_folder):
     all_paths = []
+    create_folder(save_folder)
     if not os.path.isdir(data):  # single file
         data = [data]
     else:  # folder of files

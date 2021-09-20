@@ -14,15 +14,14 @@ parser.add_argument("--save_folder",
                     help="folder to save segmentations and images",
                     default="example",
                     required=True)
-parser.add_argument("--mode",
-                    choices=["binary", "multi"],
-                    default="multi",
+parser.add_argument("--multi",
+                    action="store_true",
+                    default=False,
                     help="if \"multi\" shows ground-glass opacities and consolidation")
 
 # parsing
 args = parser.parse_args()
 save_folder = args.save_folder
-multi_class = (args.mode == 'multi')
 
 # setup
 models, transforms = get_setup()
@@ -35,9 +34,11 @@ for x in ['segmentations', 'annotations']:
     create_folder(os.path.join(save_folder, x))
 
 # prediction
-for img, annotation, path in make_masks(paths, models, transforms, multi_class):
+for img, annotation, path in make_masks(paths, models, transforms, args.multi):
     # annotation saving
-    name = path.split('\\')[-1].split('.')[0]
+    print(path)
+    name = path.split('\\')[-1].split('.')[0].split('/')[-1]
+    print(name)
     with open(os.path.join(save_folder, 'annotations', name + '_annotation.txt'), mode='w') as f:
         f.write(annotation)
 
