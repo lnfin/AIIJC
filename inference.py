@@ -27,16 +27,9 @@ paths = data_to_paths(args.data, args.save_folder)
 for x in ['segmentations', 'annotations']:
     create_folder(os.path.join(save_folder, x))
 
-with open(os.path.join(save_folder, 'segmentations_info.txt'), 'w') as f:
-    f.write('''> Colors meaning:
-    Green - ground-glass opacities
-    Red - consolidation
-    Aquamarine - ground-glass opacities and/or consolidation (only in binary mode)
-    ''')
-
 for img, annotation, path in make_masks(paths, models, transforms, multi_class):
     name = path.split('\\')[-1].split('.')[0]
-    with open(os.path.join(save_folder, 'annotations', name + '.txt'), mode='w') as f:
+    with open(os.path.join(save_folder, 'annotations', name + '_annotation.txt'), mode='w') as f:
         f.write(annotation)
     path = os.path.join(save_folder, 'segmentations', name + '_mask.png')
     print(path, annotation, '', sep='\n')

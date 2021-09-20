@@ -124,8 +124,8 @@ def get_predictions(paths, models, transforms, multi_class=True):
                 multi_output = multi_model(X)
                 multi_pred = multi_output.squeeze().cpu()
                 multi_pred = torch.argmax(multi_pred, 0).float()
-                pred = multi_pred * pred
                 pred = (pred % 3)
+                pred = pred + (multi_pred == 2)
             pred = pred / 2
             yield img.numpy(), pred.numpy(), lung.numpy()
 
@@ -159,6 +159,7 @@ def make_masks(paths, models, transforms, multi_class=True):
         img = img.swapaxes(0, -1)
         img = np.round(img * 255)
         img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
+        img = cv2.flip(img, 0)
         yield img, annotation, path
 
 
