@@ -99,7 +99,7 @@ def read_files(files):
     for file in files:
         imgs.append([])
         # if NIfTI we should get slices
-        if file.name.endswith('.nii'):
+        if file.name.endswith('.nii') or file.name.endswith('.nii.gz'):
             # saving file from user
             nii_path = path + file.name
             open(nii_path, 'wb').write(file.getvalue())

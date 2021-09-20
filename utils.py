@@ -53,28 +53,25 @@ def get_criterion(cfg):
 
 
 def get_model(cfg):
-    name = cfg.model
-    model = getattr(sys.modules['custom.models'], name)
-    return model
+    return getattr(sys.modules['custom.models'], cfg.model)
 
 
 def get_optimizer(cfg):
-    optimizer = getattr(sys.modules['torch.optim'], cfg.optimizer)
-    return optimizer
+    return getattr(sys.modules['torch.optim'], cfg.optimizer)
 
 
 def get_scheduler(cfg):
     if cfg.scheduler:
-        scheduler = getattr(sys.modules['torch.optim.lr_scheduler'], cfg.scheduler)
-    else:
-        scheduler = FakeScheduler
-    return scheduler
+        return getattr(sys.modules['torch.optim.lr_scheduler'], cfg.scheduler)
+    return FakeScheduler
 
 
 def get_paths_1_dataset(data_folder, dataset_name):
     paths_folder = os.path.join(data_folder, dataset_name)
     last_number = 0
     paths, _paths = [], []
+
+    # MedSeg has only one NIftI for many patients
     if 'MedSeg' in dataset_name:
         for i, name in enumerate(sorted(os.listdir(paths_folder))):
             path = os.path.join(paths_folder, name)
@@ -85,6 +82,7 @@ def get_paths_1_dataset(data_folder, dataset_name):
         paths.append(_paths)
         return paths
 
+    #
     for name in sorted(os.listdir(paths_folder)):
         path = os.path.join(paths_folder, name)
         number_of_patient = int(name.split('_')[0])
@@ -98,48 +96,13 @@ def get_paths_1_dataset(data_folder, dataset_name):
 
 
 def get_paths(cfg):
-    """
-    :param cfg: Config
-    :return: paths [patient[slice, ...], ...]
-    """
-    dataset_name = cfg.dataset_name
-    paths = []
+    # if list for adding paths from every dataset
     if isinstance(cfg.dataset_name, list):
-        for name in dataset_name:
+        paths = []
+        for name in cfg.dataset_name:
             paths.extend(get_paths_1_dataset(cfg.data_folder, name))
         return paths
-    paths = get_paths_1_dataset(cfg.data_folder, dataset_name)
+
+    # if solo dataset
+    paths = get_paths_1_dataset(cfg.data_folder, cfg.dataset_name)
     return paths
-
-
-def show_segmentation(cfg, loader, best_dict, n=1, size=16, device=None):
-    if not device:
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print('Image, Prediction, True mask')
-    k = 0
-    model = get_model(cfg)(cfg=cfg).to(device)
-    model.load_state_dict(torch.load(best_dict))
-    for X, y in loader:
-        with torch.no_grad():
-            X = X.to(device)
-            y = y.to(device)
-
-            output = model(X).to(device)
-            output = torch.argmax(output, 1).float()
-            for i in range(len(X)):
-                if len(torch.unique(y[i])) == 1:
-                    continue
-                plt.subplots(1, 8, figsize=(size, size))
-                plt.subplot(1, 3, 1)
-                plt.axis('off')
-                plt.imshow(X[i].cpu().squeeze(), cmap='gray')
-                plt.subplot(1, 3, 2)
-                plt.axis('off')
-                plt.imshow(output[i].cpu().squeeze(), cmap='gray')
-                plt.subplot(1, 3, 3)
-                plt.axis('off')
-                plt.imshow(y[i].cpu().squeeze(), cmap='gray')
-                plt.show()
-                k += 1
-                if k == n:
-                    return
