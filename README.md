@@ -17,7 +17,7 @@
 
 Для запуска сайта: `streamlit run app.py`
 
-Для запуска предсказания: `python3 do_predictions.py --help`
+Для запуска предсказания: `python3 inference.py -h`
 
 ## Структура проекта
 - **app.py** - код сайта
