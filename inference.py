@@ -77,11 +77,20 @@ if args.mode == 'multi':
     cfg = MultiModelConfig
 
 paths = data_to_paths(args.data, args.save_folder)
-for path, pred in zip(paths, get_predictions(cfg,
-                                             binary_model, lungs_model,
-                                             paths, device,
-                                             multi_model=model)):
-    to_img = pred * 255
-    path = os.path.join('C:\\', *path[2:].split('\\')[:-2], 'segmentations', path.split('\\')[-1][:-4] + '_mask.png')
+for path, (img, pred, lung) in zip(paths, get_predictions(cfg,
+                                                          binary_model, lungs_model,
+                                                          paths, device,
+                                                          multi_model=model)):
+    img0 = (lung == 1)
+    img1 = (pred == 0.5)
+    img2 = (pred == 1)
+    img = np.array([img0, img1, img2]) + img * (lung == 0)
+    img = img.swapaxes(0, -1)
+    img = np.round(img * 255)
+    path = os.path.join(args.save_folder, 'segmentations', path.split('\\')[-1][:-4] + '_mask.png')
     print(path)
-    cv2.imwrite(path, to_img)
+    print(f'Ground-class opacities - {np.sum(img1) / np.sum(lung) * 100:.1f}%')
+    if args.mode == 'multi':
+        print(f'Consolidation - {np.sum(img2) / np.sum(lung) * 100:.1f}%')
+    cv2.imwrite(path, img)
+    # cv2.imwrite(path[:-4] + '_2.png', pred * 255)

@@ -114,7 +114,8 @@ def get_predictions(cfg, binary_model, lung_model, paths, device, multi_model=No
                 multi_output = multi_model(X)
                 multi_pred = multi_output.squeeze().cpu()
                 multi_pred = torch.argmax(multi_pred, 0).float()
-            for pred, lung in zip(output, lungs):
+            for img, pred, lung in zip(X, output, lungs):
+                img = img.squeeze().cpu()
                 pred = pred.squeeze().cpu()
                 pred = torch.argmax(pred, 0).float()
 
@@ -122,9 +123,10 @@ def get_predictions(cfg, binary_model, lung_model, paths, device, multi_model=No
                 lung = torch.argmax(lung, 0).float()
                 if multi_model:
                     pred = multi_pred * pred
-                    pred = (pred % 3) / 3
-                pred = pred * lung
-                yield pred.numpy()
+                    pred = (pred % 3)
+                pred = pred / 2
+                # pred = pred * lung
+                yield img.numpy(), pred.numpy(), lung.numpy()
 
 
 def percents_of_covid19(lung_mask, covid19_mask):
