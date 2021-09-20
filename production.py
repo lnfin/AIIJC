@@ -129,6 +129,71 @@ def get_predictions(cfg, binary_model, lung_model, paths, device, multi_model=No
                 yield img.numpy(), pred.numpy(), lung.numpy()
 
 
-def percents_of_covid19(lung_mask, covid19_mask):
-    covid19_mask_binarized = covid19_mask >= 1
-    return np.sum(covid19_mask_binarized) / np.sum(lung_mask)
+def make_masks(cfg, paths, binary_model, lungs_model, device, multi_model=None):
+    for path, (img, pred, lung) in zip(paths, get_predictions(cfg,
+                                                              binary_model, lungs_model,
+                                                              paths, device,
+                                                              multi_model=multi_model)):
+        img0 = np.zeros_like(img)
+        img1 = (pred == 0.5)
+        img2 = (pred == 1)
+        img = np.array([img0, img1, img2]) + img * (pred == 0)
+        lung_sum = np.sum(lung)
+        if lung_sum == 0:  # Костыль-фича
+            lung_sum = img.shape[1] * img.shape[2]
+            lung_sum = lung_sum / 3.5
+        if multi_model:
+            ground_glass = np.sum(img1) / lung_sum
+            if ground_glass == np.nan or ground_glass == np.inf:
+                ground_glass = 0
+            consolidation = np.sum(img2) / lung_sum
+            if consolidation == np.nan or consolidation == np.inf:
+                consolidation = 0
+            annotation = f'Ground-glass opacities - {ground_glass * 100:.1f}%\n' \
+                         f'Consolidation - {consolidation * 100:.1f}%'
+        else:
+            disease = (np.sum(img1) + np.sum(img2)) / lung_sum
+            if disease == np.nan or disease == np.inf:
+                disease = 0
+            annotation = f'Disease - {disease * 100:.1f}%'
+            img[0] += (pred == 0.5)
+        img = img.swapaxes(0, -1)
+        img = np.round(img * 255)
+        img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
+        yield img, annotation, path
+
+
+def data_to_paths(data, save_folder):
+    all_paths = []
+    if not os.path.isdir(data):
+        data = [data]
+    else:
+        data = [os.path.join(data, x) for x in os.listdir(data)]
+    for path in data:
+        print(path)
+        if not os.path.exists(path):
+            print(f'Path \"{path}\" not exists')
+            continue
+        if path.endswith('.png') or path.endswith('.jpg') or path.endswith('.jpeg'):
+            all_paths.append(path)
+        elif path.endswith('.nii') or path.endswith('.nii.gz'):
+            if not os.path.exists(os.path.join(save_folder, 'slices')):
+                os.mkdir(os.path.join(save_folder, 'slices'))
+            paths = []
+            nii_name = path.split('\\')[-1].split('.')[0]
+            images = nib.load(path)
+            images = np.array(images.dataobj)
+            images = np.moveaxis(images, -1, 0)
+
+            for i, image in enumerate(images):
+                image = window_image(image, -600, 1500)
+                image += abs(np.min(image))
+                image = image / np.max(image)
+                image_path = os.path.join(save_folder, 'slices', nii_name + '_' + str(i) + '.png')
+                cv2.imwrite(image_path, image * 255)
+
+                paths.append(image_path)
+            all_paths.extend(paths)
+        else:
+            print(f'Path \"{path}\" is not supported format')
+    return all_paths
