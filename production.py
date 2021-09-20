@@ -1,7 +1,6 @@
 from utils import get_model
 from data_functions import get_transforms
 from torch.utils.data import Dataset, DataLoader
-import custom.models
 import cv2
 import torch
 import numpy as np
