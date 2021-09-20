@@ -10,19 +10,29 @@ import random
 import string
 import os
 from config import BinaryModelConfig, MultiModelConfig, LungsModelConfig
+import gdown
 
 
-def get_models():
+def get_models(device):
+    if not os.path.exists('checkpoints/'):
+        os.mkdir('checkpoints/')
+    
+    print('Скачивание моделей...')
+    gdown.cached_download(BinaryModelConfig.link, 'checkpoints/Binary.pth', quiet=False)
+    gdown.cached_download(MultiModelConfig.link, 'checkpoints/MultiClass.pth', quiet=False)
+    gdown.cached_download(LungsModelConfig.link, 'checkpoints/Lungs.pth', quiet=False)
+    
+    print('Подгрузка моделей...')
     binary_model = get_model(BinaryModelConfig)(cfg=BinaryModelConfig)
-    binary_model.load_state_dict(torch.load(BinaryModelConfig.best_dict, map_location=torch.device('cpu')))
+    binary_model.load_state_dict(torch.load(BinaryModelConfig.best_dict, map_location=device))
     binary_model.eval()
 
     multi_model = get_model(MultiModelConfig)(cfg=MultiModelConfig)
-    multi_model.load_state_dict(torch.load(MultiModelConfig.best_dict, map_location=torch.device('cpu')))
+    multi_model.load_state_dict(torch.load(MultiModelConfig.best_dict, map_location=device))
     multi_model.eval()
 
     lungs_model = get_model(LungsModelConfig)(cfg=LungsModelConfig)
-    lungs_model.load_state_dict(torch.load(LungsModelConfig.best_dict, map_location=torch.device('cpu')))
+    lungs_model.load_state_dict(torch.load(LungsModelConfig.best_dict, map_location=device))
     lungs_model.eval()
 
     return binary_model, multi_model, lungs_model

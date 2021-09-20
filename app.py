@@ -1,5 +1,4 @@
 import streamlit as st
-import gdown
 from PIL import Image
 import numpy as np
 import custom.models
@@ -12,13 +11,6 @@ import os
 import base64
 import cv2
 from production import read_files, get_models
-
-drive_link = 'https://drive.google.com/uc?id=1-tadxTBTRyru10rNNI0y4UcdntMK7hdh'
-
-
-@st.cache
-def download_model():
-    gdown.cached_download(drive_link, quiet=False)
 
 
 def main():
