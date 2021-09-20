@@ -24,6 +24,7 @@ parser.add_argument("--save_folder",
                     help="folder to save segmentations and images",
                     default="example")
 args = parser.parse_args()
+save_folder = args.save_folder
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 binary_model, multi_model, lungs_model = get_models()
@@ -39,17 +40,22 @@ if args.mode == 'multi':
 
 paths = data_to_paths(args.data, args.save_folder)
 
-if not os.path.exists(os.path.join(args.save_folder, 'segmentations')):
-    os.mkdir(os.path.join(args.save_folder, 'segmentations'))
-if not os.path.exists(os.path.join(args.save_folder, 'annotations')):
-    os.mkdir(os.path.join(args.save_folder, 'annotations'))
+if not os.path.exists(os.path.join(save_folder, 'segmentations')):
+    os.mkdir(os.path.join(save_folder, 'segmentations'))
+if not os.path.exists(os.path.join(save_folder, 'annotations')):
+    os.mkdir(os.path.join(save_folder, 'annotations'))
+with open(os.path.join(save_folder, 'segmentations_info.txt'), 'w') as f:
+    f.write('''> Colors meaning:
+    Green - ground-glass opacities
+    Red - consolidation
+    Aquamarine - ground-glass opacities and/or consolidation (only in binary mode)
+    ''')
 
 for img, annotation, path in make_masks(cfg, paths, binary_model, lungs_model,
                                         device, model):
     name = path.split('\\')[-1].split('.')[0]
-    print(annotation)
-    with open(os.path.join(args.save_folder, 'annotations', name + '.txt'), mode='w') as f:
+    with open(os.path.join(save_folder, 'annotations', name + '.txt'), mode='w') as f:
         f.write(annotation)
-    path = os.path.join(args.save_folder, 'segmentations', name + '_mask.png')
-    print(path)
+    path = os.path.join(save_folder, 'segmentations', name + '_mask.png')
+    print(path, annotation, '', sep='\n')
     cv2.imwrite(path, img)
