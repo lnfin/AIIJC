@@ -20,6 +20,7 @@ class BinaryModelConfig:
     backbone = 'resnext101_32x4d'
     encoder_weights = 'swsl'
     best_dict = 'checkpoints/Binary.pth'
+    link = 'https://drive.google.com/uc?id=1uUb8rw8JM6sG9xtaahBrr4SCBcWB70qr'
 
 
 class MultiModelConfig:
@@ -43,6 +44,7 @@ class MultiModelConfig:
     model = 'UnetPlusPlus'
     backbone = 'resnet101'
     best_dict = 'checkpoints/MultiClass.pth'
+    link = 'https://drive.google.com/uc?id=1W8V3t-TDXH7Bwem6-2I6vYKLmQmOiyXa'
 
 
 class LungsModelConfig:
@@ -66,3 +68,4 @@ class LungsModelConfig:
     model = 'UnetPlusPlus'
     backbone = 'resnet101'
     best_dict = 'checkpoints/Lungs.pth'
+    link = 'https://drive.google.com/uc?id=1n0evx7Rk0z5MKqo1sXZtX3qkWlwAuTYB'
