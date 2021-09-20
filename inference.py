@@ -43,5 +43,5 @@ for img, annotation, path in make_masks(paths, models, transforms, multi_class):
 
     # image saving
     path = os.path.join(save_folder, 'segmentations', name + '_mask.png')
-    print(path, annotation, '', sep='\n')
     cv2.imwrite(path, img)
+    print(path, annotation, '', sep='\n')
