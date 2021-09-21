@@ -39,11 +39,12 @@ class MultiModelConfig:
     ]
     augmentations = []
     post_transforms = []
-    output_channels = 4
+    output_channels = 3
 
     model = 'UnetPlusPlus'
     backbone = 'resnet101'
-    best_dict = 'checkpoints/MultiClass.pth'
+    # best_dict = 'checkpoints/MultiClass.pth'
+    best_dict = 'checkpoints/Lungs_L&R.pth'
     link = 'https://drive.google.com/uc?id=1W8V3t-TDXH7Bwem6-2I6vYKLmQmOiyXa'
 
 
