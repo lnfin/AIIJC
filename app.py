@@ -5,13 +5,14 @@ import custom.models
 from zipfile import ZipFile
 import os
 import cv2
-from production import read_files, get_setup, make_masks, create_folder
+from production import read_files, get_setup, make_masks, create_folder, make_legend
 import shutil
 
 
 @st.cache
 def cached_get_setup():
     return get_setup()
+
 
 def main():
     models, transforms = cached_get_setup()
@@ -49,7 +50,7 @@ def main():
                                  accept_multiple_files=True)
 
     multi_class = st.checkbox(label='Мульти-классовая сегментация', value=False)
-    
+    show_legend = st.checkbox(label='Легенда на картинке', value=False)
 
     if st.button('Загрузить') and filenames:
         paths, folder_name = read_files(filenames)
@@ -90,6 +91,11 @@ def main():
                         col1.header("Оригинал")
                         col1.image(original, width=350)
 
+                        # refactoring image
+                        if show_legend:
+                            img = make_legend(img, annotation)
+                            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
                         # saving image
                         path = os.path.join(user_dir, 'segmentations', name + '_mask.png')
                         cv2.imwrite(path, img)
@@ -99,7 +105,8 @@ def main():
                         zip_obj.write(annotation_path)
 
                         # show segmentation
-                        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB) / 255  # to RGB and [0; 1] range
+                        img = img / 255  # to [0;1] range
+                        # print(img.shape, img.dtype, img)
                         col2.header("Сегментация")
                         col2.image(img, width=350)
 

@@ -9,6 +9,7 @@ import random
 import string
 import os
 from config import BinaryModelConfig, MultiModelConfig, LungsModelConfig
+from PIL import Image, ImageFont, ImageDraw
 
 
 def get_setup():
@@ -33,6 +34,35 @@ def get_setup():
 
 def generate_folder_name():
     return ''.join(random.choice(string.ascii_lowercase) for _ in range(7)) + '/'
+
+
+def make_legend(bgr_image, annotation):
+    rgb_image = cv2.cvtColor(bgr_image, cv2.COLOR_BGR2RGB)
+    rgb_image = np.round(rgb_image).astype(np.uint8)
+    image = Image.fromarray(rgb_image)
+    old_size = image.size
+    if len(annotation.split('\n')) == 2:
+        new_size = (old_size[0], old_size[1] + 90)
+        new_image = Image.new('RGB', new_size)
+        new_image.paste(image)
+        font = ImageFont.truetype("arial.ttf", 30)
+        draw = ImageDraw.Draw(new_image)
+        draw.ellipse((20 + 2, new_size[1] - 30 + 2, 40 - 2, new_size[1] - 10 - 2), fill=(0, 255, 0))
+        draw.text((50, new_size[1] - 40),
+                  annotation.split('\n')[0], (255, 255, 255), font=font)
+        draw.ellipse((20 + 2, new_size[1] - 70 + 2, 40 - 2, new_size[1] - 50 - 2), fill=(0, 0, 255))
+        draw.text((50, new_size[1] - 80),
+                  annotation.split('\n')[1], (255, 255, 255), font=font)
+    else:
+        new_size = (old_size[0], old_size[1] + 40)
+        new_image = Image.new('RGB', new_size)
+        new_image.paste(image)
+        font = ImageFont.truetype("arial.ttf", 30)
+        draw = ImageDraw.Draw(new_image)
+        draw.ellipse((20 + 2, new_size[1] - 30 + 2, 40 - 2, new_size[1] - 10 - 2), fill=(0, 255, 255))
+        draw.text((50, new_size[1] - 40),
+                  annotation.split('\n')[0], (255, 255, 255), font=font)
+    return np.asarray(new_image)
 
 
 def data_to_paths(data, save_folder):
@@ -168,10 +198,10 @@ def get_predictions(paths, models, transforms, multi_class=True):
 
 def make_masks(paths, models, transforms, multi_class=True):
     for path, (img, pred, lung) in zip(paths, get_predictions(paths, models, transforms, multi_class)):
-        img0 = np.zeros_like(img)  # blue channel
+        img0 = (pred == 1)  # red channel
         img1 = (pred == 0.5)  # green channel
-        img2 = (pred == 1)  # red channel
-        img = np.array([img0, img1, img2]) + img * (pred == 0)  # combine in bgr image
+        img2 = np.zeros_like(img)  # blue channel
+        img = np.array([img0, img1, img2]) + img * (pred == 0)  # combine in rgb image
 
         lung_sum = np.sum(lung)  # lung pixels
 
@@ -186,7 +216,7 @@ def make_masks(paths, models, transforms, multi_class=True):
                 ground_glass = 0
 
             # consolidation percents
-            consolidation = np.sum(img2) / lung_sum
+            consolidation = np.sum(img0) / lung_sum
             if consolidation == np.nan or consolidation == np.inf:
                 consolidation = 0
 
@@ -194,7 +224,7 @@ def make_masks(paths, models, transforms, multi_class=True):
                          f'Consolidation - {consolidation * 100:.1f}%'
         else:
             # disease percents
-            disease = (np.sum(img1) + np.sum(img2)) / lung_sum
+            disease = (np.sum(img1) + np.sum(img0)) / lung_sum
             if disease == np.nan or disease == np.inf:
                 disease = 0
             annotation = f'Disease - {disease * 100:.1f}%'
