@@ -140,14 +140,14 @@ def read_files(files):
 
             os.remove(nii_path)  # clearing
 
-            for image in images:  # saving every slice in NIftI
+            for idx, image in enumerate(images):  # saving every slice in NIftI
                 # windowing
                 image = window_image(image)
                 image += abs(np.min(image))
                 image = image / np.max(image)
 
                 # saving
-                image_path = path + file.name.split('.')[0] + '.png'
+                image_path = path + file.name.split('.')[0] + str(idx) + '.png'
                 cv2.imwrite(image_path, image * 255)
                 paths[-1].append(image_path)
 
