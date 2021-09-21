@@ -94,7 +94,6 @@ def main():
                         # refactoring image
                         if show_legend:
                             img = make_legend(img, annotation)
-                            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
                         # saving image
                         path = os.path.join(user_dir, 'segmentations', name + '_mask.png')
@@ -105,6 +104,7 @@ def main():
                         zip_obj.write(annotation_path)
 
                         # show segmentation
+                        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                         img = img / 255  # to [0;1] range
                         # print(img.shape, img.dtype, img)
                         col2.header("Сегментация")

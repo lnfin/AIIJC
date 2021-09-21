@@ -36,9 +36,9 @@ def generate_folder_name():
     return ''.join(random.choice(string.ascii_lowercase) for _ in range(7)) + '/'
 
 
-def make_legend(bgr_image, annotation):
-    rgb_image = cv2.cvtColor(bgr_image, cv2.COLOR_BGR2RGB)
-    rgb_image = np.round(rgb_image).astype(np.uint8)
+def make_legend(image, annotation):
+    # rgb_image = cv2.cvtColor(bgr_image, cv2.COLOR_BGR2RGB)
+    rgb_image = np.round(image).astype(np.uint8)
     image = Image.fromarray(rgb_image)
     old_size = image.size
     if len(annotation.split('\n')) == 2:
@@ -198,10 +198,10 @@ def get_predictions(paths, models, transforms, multi_class=True):
 
 def make_masks(paths, models, transforms, multi_class=True):
     for path, (img, pred, lung) in zip(paths, get_predictions(paths, models, transforms, multi_class)):
-        img0 = (pred == 1)  # red channel
+        img0 = (pred == 1)  # blue channel
         img1 = (pred == 0.5)  # green channel
-        img2 = np.zeros_like(img)  # blue channel
-        img = np.array([img0, img1, img2]) + img * (pred == 0)  # combine in rgb image
+        img2 = np.zeros_like(img)  # red channel
+        img = np.array([img2, img1, img0]) + img * (pred == 0)  # combine in rgb image
 
         lung_sum = np.sum(lung)  # lung pixels
 
@@ -230,7 +230,7 @@ def make_masks(paths, models, transforms, multi_class=True):
             annotation = f'Disease - {disease * 100:.1f}%'
 
             # making color for disease
-            img[0] += (pred == 0.5)
+            img[2] += (pred == 0.5)
 
         # reformatting for normal view
         img = img.swapaxes(0, -1)
