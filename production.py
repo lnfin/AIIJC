@@ -202,19 +202,18 @@ def combo_with_lungs(disease, lungs):
 
 def make_masks(paths, models, transforms, multi_class=True):
     for path, (img, pred, lung) in zip(paths, get_predictions(paths, models, transforms, multi_class)):
-        lung_sum_right = np.sum(lung == 1)
-        lung_sum_left = np.sum(lung == 2)
+        lung_right = (lung == 1)
+        lung_left = (lung == 2)
         not_disease = (pred == 0)
         if multi_class:
             consolidation = (pred == 2)  # red channel
             ground_glass = (pred == 1)  # green channel
 
-            print(consolidation.shape, ground_glass.shape)
-            img = np.array([np.zeros(img), ground_glass, consolidation]) + img * not_disease
+            img = np.array([np.zeros_like(img), ground_glass, consolidation]) + img * not_disease
 
             annotation = f'Lungs                Left | Right\n' \
-                         f'Ground-glass opacities - {ground_glass * lung_sum_left * 100:.1f} | {ground_glass * lung_sum_right * 100:.1f%}\n' \
-                         f'Consolidation - {consolidation * lung_sum_left * 100:.1f} | {consolidation * lung_sum_right * 100:.1f%}'
+                         f'Ground-glass opacities - {np.sum(ground_glass * lung_left) / np.sum(lung_left) * 100:.1f}% | {np.sum(ground_glass * lung_right) / np.sum(lung_right) * 100:.1f}%\n' \
+                         f'Consolidation - {np.sum(consolidation * lung_left) / np.sum(lung_left) * 100:.1f}% | {np.sum(consolidation * lung_right) / np.sum(lung_right) * 100:.1f}%'
         else:
             # disease percents
             disease = (pred == 1)
