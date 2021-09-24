@@ -192,47 +192,38 @@ def get_predictions(paths, models, transforms, multi_class=True):
                 multi_pred = torch.argmax(multi_pred, 0).float()
                 multi_pred = (multi_pred % 3)  # model on trained on 3 classes but using only 2
                 pred = pred + (multi_pred == 2)  # ground-glass from binary model and consolidation from second
-            pred = pred / 2  # to [0;1] range
+            pred = pred  # to [0;1] range
             yield img.numpy(), pred.numpy(), lung.numpy()
+
+
+def combo_with_lungs(disease, lungs):
+    return disease * (lungs == 1), disease * (lungs == 2)
 
 
 def make_masks(paths, models, transforms, multi_class=True):
     for path, (img, pred, lung) in zip(paths, get_predictions(paths, models, transforms, multi_class)):
-        img0 = (pred == 1)  # blue channel
-        img1 = (pred == 0.5)  # green channel
-        img2 = np.zeros_like(img)  # red channel
-        img = np.array([img2, img1, img0]) + img * (pred == 0)  # combine in rgb image
-
-        lung_sum = np.sum(lung)  # lung pixels
-
-        if lung_sum == 0:  # Feature
-            lung_sum = img.shape[1] * img.shape[2]
-            lung_sum = lung_sum / 3.5
-            print('lungs not found')
+        lung_sum_right = np.sum(lung == 1)
+        lung_sum_left = np.sum(lung == 2)
+        not_disease = (pred == 0)
         if multi_class:
-            # ground_glass percents
-            ground_glass = np.sum(img1) / lung_sum
-            if ground_glass == np.nan or ground_glass == np.inf:
-                ground_glass = 0
+            consolidation = (pred == 2)  # red channel
+            ground_glass = (pred == 1)  # green channel
 
-            # consolidation percents
-            consolidation = np.sum(img0) / lung_sum
-            if consolidation == np.nan or consolidation == np.inf:
-                consolidation = 0
+            print(consolidation.shape, ground_glass.shape)
+            img = np.array([np.zeros(img), ground_glass, consolidation]) + img * not_disease
 
-            annotation = f'Ground-glass opacities - {ground_glass * 100:.1f}%\n' \
-                         f'Consolidation - {consolidation * 100:.1f}%'
+            annotation = f'Lungs                Left | Right\n' \
+                         f'Ground-glass opacities - {ground_glass * lung_sum_left * 100:.1f} | {ground_glass * lung_sum_right * 100:.1f%}\n' \
+                         f'Consolidation - {consolidation * lung_sum_left * 100:.1f} | {consolidation * lung_sum_right * 100:.1f%}'
         else:
             # disease percents
-            disease = (np.sum(img1) + np.sum(img0)) / lung_sum
-            if disease == np.nan or disease == np.inf:
-                disease = 0
-            annotation = f'Disease - {disease * 100:.1f}%'
+            disease = (pred == 1)
 
-            # making color for disease
-            img[2] += (pred == 0.5)
+            annotation = f'Lungs              Left | Right\n' \
+                         f'Disease - {disease * 100:.1f}% | {disease * 100:.1f}'
 
-        # reformatting for normal view
+            img = np.array([np.zeros(img), disease, disease]) + img * not_disease
+
         img = img.swapaxes(0, -1)
         img = np.round(img * 255)
         img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
