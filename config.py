@@ -63,9 +63,9 @@ class LungsModelConfig:
     ]
     augmentations = []
     post_transforms = []
-    output_channels = 2
+    output_channels = 3
 
     model = 'UnetPlusPlus'
     backbone = 'resnet101'
-    best_dict = 'checkpoints/Lungs.pth'
+    best_dict = 'checkpoints/Lungs_L&R.pth'
     link = 'https://drive.google.com/uc?id=1n0evx7Rk0z5MKqo1sXZtX3qkWlwAuTYB'
