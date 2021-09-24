@@ -211,15 +211,13 @@ def make_masks(paths, models, transforms, multi_class=True):
 
             img = np.array([np.zeros_like(img), ground_glass, consolidation]) + img * not_disease
 
-            annotation = f'Lungs                Left | Right\n' \
-                         f'Ground-glass opacities - {np.sum(ground_glass * lung_left) / np.sum(lung_left) * 100:.1f}% | {np.sum(ground_glass * lung_right) / np.sum(lung_right) * 100:.1f}%\n' \
+            annotation = f' Ground-glass - {np.sum(ground_glass * lung_left) / np.sum(lung_left) * 100:.1f}% | {np.sum(ground_glass * lung_right) / np.sum(lung_right) * 100:.1f}%\n' \
                          f'Consolidation - {np.sum(consolidation * lung_left) / np.sum(lung_left) * 100:.1f}% | {np.sum(consolidation * lung_right) / np.sum(lung_right) * 100:.1f}%'
         else:
             # disease percents
             disease = (pred == 1)
 
-            annotation = f'Lungs              Left | Right\n' \
-                         f'Disease - {disease * 100:.1f}% | {disease * 100:.1f}'
+            annotation = f'Disease - {disease * 100:.1f}% | {disease * 100:.1f}'
 
             img = np.array([np.zeros(img), disease, disease]) + img * not_disease
 
