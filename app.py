@@ -54,7 +54,6 @@ def main():
 
     if st.button('Загрузить') and filenames:
         paths, folder_name = read_files(filenames)
-
         if not paths:
             st.error('Неправильный формат или название файла')
         else:
@@ -122,12 +121,7 @@ def main():
                     st.download_button(
                         label="Архив сегментаций",
                         data=file,
-                        file_name="segmentations.zip",
-                    )
-
-                # clearing
-                # shutil.rmtree(os.path.join('segmentations', folder_name))
-                # shutil.rmtree(os.path.join('images', folder_name))
+                        file_name="segmentations.zip")
 
 
 if __name__ == '__main__':
