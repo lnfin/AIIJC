@@ -202,8 +202,8 @@ def combo_with_lungs(disease, lungs):
 
 def make_masks(paths, models, transforms, multi_class=True):
     for path, (img, pred, lung) in zip(paths, get_predictions(paths, models, transforms, multi_class)):
-        lung_right = (lung == 1)
-        lung_left = (lung == 2)
+        lung_left = (lung == 1)
+        lung_right = (lung == 2)
         not_disease = (pred == 0)
         if multi_class:
             consolidation = (pred == 2)  # red channel
