@@ -68,5 +68,5 @@ class LungsModelConfig:
     model = 'UnetPlusPlus'
     backbone = 'resnext101_32x4d'
     encoder_weights = 'swsl'
-    best_dict = 'checkpoints/Lungs_L&R_2.pth'
+    best_dict = 'checkpoints/Lungs.pth'
     link = 'https://drive.google.com/uc?id=1n0evx7Rk0z5MKqo1sXZtX3qkWlwAuTYB'
