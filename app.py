@@ -82,7 +82,9 @@ def main():
 
                         # name and annotation
                         st.markdown(f'<h3>{name}</h3>', unsafe_allow_html=True)
-                        st.markdown(annotation)
+                        if not show_legend:
+                            for line in annotation.split('\n'):
+                                st.markdown(line)
 
                         col1, col2 = st.columns(2)
 
