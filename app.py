@@ -82,6 +82,11 @@ def main():
                         # name and annotation
                         st.markdown(f'<h3>{name}</h3>', unsafe_allow_html=True)
                         if not show_legend:
+                            if len(annotation.split('\n')) == 3:
+                                st.markdown('[red] - consolidation')
+                                st.markdown('[green] - ground-glass')
+                            else:
+                                st.markdown('[yellow] - disease')
                             for line in annotation.split('\n'):
                                 st.markdown(line)
 

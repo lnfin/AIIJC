@@ -223,9 +223,9 @@ def make_masks(paths, models, transforms, multi_class=True):
             disease = (pred == 1)
 
             annotation = f'              left   |   right\n' \
-                         f'Disease - {disease * 100:.1f}% | {disease * 100:.1f}'
+                         f'Disease - {np.sum(disease * lung_left) / np.sum(lung_left) * 100:.1f}%  |  {np.sum(disease * lung_right) / np.sum(lung_right) * 100:.1f}%'
 
-            img = np.array([np.zeros(img), disease, disease]) + img * not_disease
+            img = np.array([np.zeros_like(img), disease, disease]) + img * not_disease
 
         img = img.swapaxes(0, -1)
         img = np.round(img * 255)
