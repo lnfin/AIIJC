@@ -41,26 +41,30 @@ def make_legend(image, annotation):
     rgb_image = np.round(image).astype(np.uint8)
     image = Image.fromarray(rgb_image)
     old_size = image.size
-    if len(annotation.split('\n')) == 2:
-        new_size = (old_size[0], old_size[1] + 90)
+    if len(annotation.split('\n')) == 3:
+        new_size = (old_size[0], old_size[1] + 130)
         new_image = Image.new('RGB', new_size)
         new_image.paste(image)
         font = ImageFont.truetype("arial.ttf", 30)
         draw = ImageDraw.Draw(new_image)
         draw.ellipse((20 + 2, new_size[1] - 30 + 2, 40 - 2, new_size[1] - 10 - 2), fill=(0, 255, 0))
         draw.text((50, new_size[1] - 40),
-                  annotation.split('\n')[0], (255, 255, 255), font=font)
+                  annotation.split('\n')[1], (255, 255, 255), font=font)
         draw.ellipse((20 + 2, new_size[1] - 70 + 2, 40 - 2, new_size[1] - 50 - 2), fill=(0, 0, 255))
         draw.text((50, new_size[1] - 80),
-                  annotation.split('\n')[1], (255, 255, 255), font=font)
+                  annotation.split('\n')[2], (255, 255, 255), font=font)
+        draw.text((50, new_size[1] - 120),
+                  annotation.split('\n')[0], (255, 255, 255), font=font)
     else:
-        new_size = (old_size[0], old_size[1] + 40)
+        new_size = (old_size[0], old_size[1] + 90)
         new_image = Image.new('RGB', new_size)
         new_image.paste(image)
         font = ImageFont.truetype("arial.ttf", 30)
         draw = ImageDraw.Draw(new_image)
         draw.ellipse((20 + 2, new_size[1] - 30 + 2, 40 - 2, new_size[1] - 10 - 2), fill=(0, 255, 255))
         draw.text((50, new_size[1] - 40),
+                  annotation.split('\n')[1], (255, 255, 255), font=font)
+        draw.text((50, new_size[1] - 80),
                   annotation.split('\n')[0], (255, 255, 255), font=font)
     return np.asarray(new_image)
 
@@ -211,13 +215,15 @@ def make_masks(paths, models, transforms, multi_class=True):
 
             img = np.array([np.zeros_like(img), ground_glass, consolidation]) + img * not_disease
 
-            annotation = f' Ground-glass - {np.sum(ground_glass * lung_left) / np.sum(lung_left) * 100:.1f}% | {np.sum(ground_glass * lung_right) / np.sum(lung_right) * 100:.1f}%\n' \
+            annotation = f'              left   |   right\n' \
+                         f' Ground-glass - {np.sum(ground_glass * lung_left) / np.sum(lung_left) * 100:.1f}% | {np.sum(ground_glass * lung_right) / np.sum(lung_right) * 100:.1f}%\n' \
                          f'Consolidation - {np.sum(consolidation * lung_left) / np.sum(lung_left) * 100:.1f}% | {np.sum(consolidation * lung_right) / np.sum(lung_right) * 100:.1f}%'
         else:
             # disease percents
             disease = (pred == 1)
 
-            annotation = f'Disease - {disease * 100:.1f}% | {disease * 100:.1f}'
+            annotation = f'              left   |   right\n' \
+                         f'Disease - {disease * 100:.1f}% | {disease * 100:.1f}'
 
             img = np.array([np.zeros(img), disease, disease]) + img * not_disease
 
