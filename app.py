@@ -9,7 +9,7 @@ from production import read_files, get_setup, make_masks, create_folder, make_le
 import shutil
 
 
-@st.cache
+@st.cache()
 def cached_get_setup():
     return get_setup()
 
