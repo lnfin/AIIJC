@@ -31,3 +31,4 @@
   - Lungs.pth
 
 [Папку checkpoints скачать тут](https://drive.google.com/file/d/19svztOBB4RhnW7cwuZTDPZb0EiWKdydN/view?usp=sharing)
+[Тренировка](https://drive.google.com/drive/folders/1AawFssvVRtF3lZIr6nOvObcH41Gu4rIE?usp=sharing) происходила на Google Colab Pro
