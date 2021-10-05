@@ -1,10 +1,5 @@
 # AIIJC. Трек "ИИ в медицине"
 
-## Введение
-
-"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
-
-
 ## Данные
 
 * [MosMedData: результаты исследований компьютерной томографии органов грудной клетки с признаками COVID-19]()  
@@ -30,3 +25,8 @@
   - metrics.py - кастомные метрики
   - models.py - кастомные классы моделей
 - **requirements.txt** - файл зависимостей
+- **checkpoints**
+  - Binary.pth
+  - MultiClass.pth
+  - Lungs.pth
+Папку checkpoints скачать тут(https://drive.google.com/file/d/19svztOBB4RhnW7cwuZTDPZb0EiWKdydN/view?usp=sharing)
