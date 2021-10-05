@@ -13,8 +13,6 @@
 
 ## Запуск кода 
 
-Для запуска обучения измените **config.py** и исполните `python3 main.py`
-
 Для запуска сайта: `streamlit run app.py`
 
 Для запуска предсказания: `python3 inference.py -h`
