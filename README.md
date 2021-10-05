@@ -2,8 +2,8 @@
 
 ## Данные
 
-* [MosMedData: результаты исследований компьютерной томографии органов грудной клетки с признаками COVID-19]()  
-* [MedSeg: COVID-19 CT segmentation dataset]()
+* [MosMedData: результаты исследований компьютерной томографии органов грудной клетки с признаками COVID-19](https://mosmed.ai/datasets/covid19_1110/)  
+* [MedSeg: COVID-19 CT segmentation dataset](http://medicalsegmentation.com/covid19/)
 * [Zenodo: COVID-19 CT Lung and Infection Segmentation Dataset](https://zenodo.org/record/3757476#.YRqU0IgzbP_)
 
 ## Запуск кода 
