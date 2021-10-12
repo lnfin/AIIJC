@@ -3,8 +3,8 @@ data/*
 custom/*
 images/*
 segmentations/*
-checkpoints/*
 segmentations.zip
 .idea/
 *.pth
 *.rar
+*.zip
