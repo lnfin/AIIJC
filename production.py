@@ -8,6 +8,8 @@ import nibabel as nib
 import random
 import string
 import os
+from skimage import io
+from sklearn import cluster
 from config import BinaryModelConfig, MultiModelConfig, LungsModelConfig
 from PIL import Image, ImageFont, ImageDraw
 
@@ -115,10 +117,41 @@ def data_to_paths(data, save_folder):
 def window_image(image, window_center=-600, window_width=1500):
     img_min = window_center - window_width // 2
     img_max = window_center + window_width // 2
-    window_image = image.copy()
+    window_image = image
     window_image[window_image < img_min] = img_min
     window_image[window_image > img_max] = img_max
     return window_image
+
+
+def lung_segmentation(file_name):
+    image = io.imread(file_name, as_gray=True) / 255.0
+    h, w = image.shape
+    image_2d = image.reshape(h * w, 1)
+    num_colors = 3
+    k_means_cluster = cluster.KMeans(n_clusters=int(num_colors))
+    k_means_cluster.fit(image_2d)
+    cluster_centers = k_means_cluster.cluster_centers_
+    cluster_labels = k_means_cluster.labels_
+    new_image = cluster_centers[cluster_labels].reshape(h, w) * 255.0
+    new_image = new_image.astype('uint8')
+    lower = (200)
+    upper = (255)
+    thresh = cv2.inRange(new_image, lower, upper)
+    cntrs_info = []
+    contours = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+    contours = contours[0] if len(contours) == 2 else contours[1]
+    index = 0
+    for cntr in contours:
+        area = cv2.contourArea(cntr)
+        cntrs_info.append((index, area))
+        index = index + 1
+    cntrs_info.sort(key=lambda x: x[1], reverse=True)
+    result = np.zeros_like(new_image)
+    index_first = cntrs_info[2][0]
+    cv2.drawContours(result, [contours[index_first]], 0, (255), -1)
+    index_second = cntrs_info[1][0]
+    cv2.drawContours(result, [contours[index_second]], 0, (255), -1)
+    return result
 
 
 def read_files(files):
