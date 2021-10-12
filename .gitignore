@@ -6,3 +6,5 @@ segmentations/*
 segmentations.zip
 .idea/
 *.pth
+*.rar
+*.zip
