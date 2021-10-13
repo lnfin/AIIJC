@@ -1,3 +1,7 @@
 [theme]
 
 base = "dark"
+
+[server]
+
+maxUploadSize = 1500
