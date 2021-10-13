@@ -7,9 +7,9 @@ import os
 import cv2
 from production import read_files, get_setup, make_masks, create_folder, make_legend
 import shutil
+import pandas as pd
 
-
-@st.cache(show_spinner=False, allow_input_mutation=True)
+@st.cache(show_spinner=False, allow_output_mutation=True)
 def cached_get_setup():
     return get_setup()
 
@@ -46,14 +46,14 @@ def main():
     st.title('Сегментация поражения легких коронавирусной пневмонией')
 
     st.subheader("Загрузка файлов")
-    filenames = st.file_uploader('Выберите или ператащите сюда снимки', type=['png', '.nii', '.nii.gz', '.dcm'],
+    filenames = st.file_uploader('Выберите или ператащите сюда снимки', type=['.png', '.nii', '.nii.gz', '.dcm'],
                                  accept_multiple_files=True)
 
     multi_class = st.checkbox(label='Мульти-классовая сегментация', value=False)
-    show_legend = st.checkbox(label='Легенда на картинке', value=False)
 
     if st.button('Загрузить') and filenames:
         paths, folder_name = read_files(filenames)
+        print(paths)
         if not paths:
             st.error('Неправильный формат или название файла')
         else:
@@ -65,49 +65,82 @@ def main():
             create_folder(os.path.join(user_dir, 'annotations'))
 
             zip_obj = ZipFile(user_dir + 'segmentations.zip', 'w')
-            with st.expander("Информация о каждом фото"):
+            
+
+            gallery = []
+            with st.expander("Статистика о пациенте"):
                 info = st.info('Делаем предсказания, пожалуйста, подождите')
                 for _paths in paths:
-                    for img, annotation, original_path in make_masks(_paths, models, transforms, multi_class):
-                        name = original_path.split('/')[-1].split('.')[0]
-                        name = name.replace('\\', '/')
-
-                        # saving annotation
-                        annotation_path = os.path.join(user_dir, 'annotations', name + '_annotation.txt')
-                        with open(annotation_path, mode='w') as f:
-                            f.write(annotation)
-
+                    stats = []
+                    for idx, (img, annotation, original_path) in enumerate(make_masks(_paths, models, transforms, multi_class)):
                         info.empty()
+                        
+                        # Display file/patient name
+                        if idx == 0:
+                            name = _paths[0].split('/')[-1].split('.')[0].replace('\\', '/')
+                            st.markdown(f'<h3>{name}</h3>', unsafe_allow_html=True)
+                        
+                        # Store statistics
+                        stat = {}
+                        if multi_class:
+                            stat['id'] = idx
+                            stat['left lung'] = {
+                                'Ground glass': annotation['ground_glass'][0],
+                                'Consolidation': annotation['consolidation'][0]
+                            }
+                            stat['right lung'] = {
+                                'Ground glass': annotation['ground_glass'][1],
+                                'Consolidation': annotation['consolidation'][1]
+                            }                            
+                            stat['both lungs'] = {
+                                'Ground glass': sum(annotation['ground_glass']),
+                                'Consolidation': sum(annotation['consolidation'])                                
+                            }
+                            stats.append(stat)
 
-                        # name and annotation
-                        st.markdown(f'<h3>{name}</h3>', unsafe_allow_html=True)
-                        if not show_legend:
-                            if len(annotation.split('\n')) == 3:
-                                st.markdown('[red] - consolidation')
-                                st.markdown('[green] - ground-glass')
-                            else:
-                                st.markdown('[yellow] - disease')
-                            for line in annotation.split('\n'):
-                                st.markdown(line)
+                        # Store data to gallery
+                        gallery.append((original_path, img, annotation))
+                    print(stats)
+                    
+                    # Display statistics
+                    df = pd.json_normalize(stats)
+                    df.columns = [
+                        np.array(["slice_id", "left lung", "", "right lung", " ", "both", "  "]),
+                        np.array(["", "Ground glass","Consolidation", "Ground glass", "Consolidation", "Ground glass", "Consolidation"])
+                    ]
+                    df.set_index('slice_id', inplace=True)
+                    df = df.round(2).applymap('{:.2f}'.format)
+                    st.dataframe(df)
+                    df.to_excel(os.path.join(user_dir, 'statistics.xlsx'))
+                    
 
+
+                # annotation_path = os.path.join(user_dir, 'annotation.txt')
+                # with open(annotation_path, mode='w') as f:
+                #         f.write(color_annotations)  
+                # zip_obj.write(annotation_path)
+
+            color_annotations = '''
+            <b>Binary mode:</b>\n
+            <content style="color:Yellow">●</content> Всё повреждение\n
+            
+            <b>Multi mode:</b>\n
+            <content style="color:#00FF00">●</content> Матовое стекло\n
+            <content style="color:Red">●</content> Консолидация\n
+            '''
+            
+            with st.expander("Галерея"):
+                st.markdown(color_annotations, unsafe_allow_html=True)
+                
+                # for line in list(annotation.keys()):
+                #     st.markdown(line)
+                for idx, (original_path, img, annotation) in enumerate(gallery):
+                        st.subheader('Slice №' + str(idx+1))
                         col1, col2 = st.columns(2)
-
                         # original image
                         original = np.array(Image.open(original_path))
                         col1.header("Оригинал")
                         col1.image(original, width=350)
-
-                        # refactoring image
-                        if show_legend:
-                            img = make_legend(img, annotation)
-
-                        # saving image
-                        path = os.path.join(user_dir, 'segmentations', name + '_mask.png')
-                        cv2.imwrite(path, img)
-
-                        # adding in zip
-                        zip_obj.write(path)
-                        zip_obj.write(annotation_path)
 
                         # show segmentation
                         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -115,18 +148,22 @@ def main():
                         # print(img.shape, img.dtype, img)
                         col2.header("Сегментация")
                         col2.image(img, width=350)
-
-                        st.markdown('<br />', unsafe_allow_html=True)
-
-                zip_obj.close()
-
             # download segmentation zip
+            zip_obj.close()
+            
             with st.expander("Скачать сегментации"):
                 with open(os.path.join(user_dir, 'segmentations.zip'), 'rb') as file:
                     st.download_button(
                         label="Архив сегментаций",
                         data=file,
                         file_name="segmentations.zip")
+                    
+                with open(os.path.join(user_dir, 'statistics.xlsx'), 'rb') as file:
+                    st.download_button(
+                        label="Статистика",
+                        data=file,
+                        file_name="statistcs.xlsx"
+                    )
 
 
 if __name__ == '__main__':
