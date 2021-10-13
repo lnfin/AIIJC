@@ -135,11 +135,7 @@ def lung_segmentation(image, disease):
     new_image = image
     upper = (255,)
     thresh = cv2.inRange(new_image, lower, upper)
-    # print(np.unique(thresh), np.unique(disease))
-    # print(np.unique((thresh - disease) == 255))
     thresh = 1 * ((thresh - disease) == 255).astype(np.uint8)
-    # cv2.imwrite('thresh.png', thresh * 255)
-    # cv2.imwrite('disease.png', disease)
     contours_info = []
     contours = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
     contours = contours[0] if len(contours) == 2 else contours[1]
@@ -161,12 +157,12 @@ def lung_segmentation(image, disease):
         for y, pixel in enumerate(col):
             mean_h += y * pixel
     mean_h = round(mean_h / np.sum(lungs))
-    koef = np.sum(lung1) / np.sum(lung2)
+    coef_of_lung_sizes = np.sum(lung1) / np.sum(lung2)
     right = np.zeros_like(new_image)
     left = np.zeros_like(new_image)
     right[:mean_h] = lungs[:mean_h]
     left[mean_h:] = lungs[mean_h:]
-    if 0.2 < koef < 5:
+    if 0.2 < coef_of_lung_sizes < 5:
         if np.sum(right * lung1) / np.sum(right) > np.sum(right * lung2) / np.sum(right):
             right = lung1
             left = lung2
@@ -246,13 +242,9 @@ def get_predictions(paths, models, transforms, multi_class=True):
 
         with torch.no_grad():
             pred = binary_model(X)
-            # lung = lung_model(X)
-
             img = X.squeeze().cpu()
             pred = pred.squeeze().cpu()
             pred = torch.argmax(pred, 0).float()
-            # lung = lung.squeeze().cpu()
-            # lung = torch.argmax(lung, 0).float()
             lung = lung_segmentation(np.array(img), np.array(pred))
             # if multi class we should use both models to predict
             if multi_class and torch.sum(pred) > 0:
@@ -287,16 +279,9 @@ def make_masks(paths, models, transforms, multi_class=True):
             cs_right_percents = np.sum(cs_right) / sum_right_lung
             annotation = {
                 'ground_glass':
-                [
-                    gg_left_percents,
-                    gg_right_percents
-                ],
+                    [gg_left_percents, gg_right_percents],
                 'consolidation':
-                [
-                    cs_left_percents,
-                    cs_right_percents
-                ]
-            }
+                    [cs_left_percents, cs_right_percents]}
         else:
             # disease percents
             disease = (pred == 1)
@@ -307,7 +292,7 @@ def make_masks(paths, models, transforms, multi_class=True):
                         np.sum(disease * lung_left) / np.sum(lung_left) * 100,
                         np.sum(disease * lung_right) / np.sum(lung_right) * 100
                     ]
-                }
+            }
 
             img = np.array([np.zeros_like(img), disease, disease]) + img * not_disease
 
