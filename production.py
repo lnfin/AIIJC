@@ -4,11 +4,8 @@ from torch.utils.data import Dataset, DataLoader
 import cv2
 import torch
 import numpy as np
-
 import nibabel as nib
 from pydicom import dcmread
-import patoolib
-
 import random
 import string
 import os
@@ -16,6 +13,7 @@ from skimage import io
 from sklearn import cluster
 from config import BinaryModelConfig, MultiModelConfig, LungsModelConfig
 from PIL import Image, ImageFont, ImageDraw
+import patoolib
 
 
 def get_setup():
@@ -128,14 +126,17 @@ def window_image(image, window_center=-600, window_width=1500):
 
 
 def lung_segmentation(image, disease):
+    image = image.copy() * 255
+    disease = np.array(disease.copy() * 255, dtype=np.int)
     h, w = image.shape
     mean_h = 0
     pixels = np.sum(image)
-    lower = (round(pixels / (w * h) * 1.7),)
+    lower = round(pixels / (w * h) * 1.7)
+    lower = (min(lower, 180),)
     new_image = image
     upper = (255,)
     thresh = cv2.inRange(new_image, lower, upper)
-    thresh = thresh[thresh + disease >= 1] = 1
+    thresh = 1 * ((thresh - disease) == 255).astype(np.uint8)
     contours_info = []
     contours = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
     contours = contours[0] if len(contours) == 2 else contours[1]
@@ -145,31 +146,41 @@ def lung_segmentation(image, disease):
         contours_info.append((index, area))
         index = index + 1
     contours_info.sort(key=lambda x: x[1], reverse=True)
-    lungs = np.zeros_like(new_image)
+    lung1 = np.zeros_like(new_image)
+    lung2 = np.zeros_like(new_image)
     if len(contours_info) >= 3:
         index_second = contours_info[1][0]
-        cv2.drawContours(lungs, [contours[index_second]], 0, (255), -1)
+        cv2.drawContours(lung1, [contours[index_second]], 0, (255), -1)
         index_first = contours_info[2][0]
-        cv2.drawContours(lungs, [contours[index_first]], 0, (255), -1)
+        cv2.drawContours(lung2, [contours[index_first]], 0, (255), -1)
+    lungs = lung1 + lung2
     for x, col in enumerate(lungs):
         for y, pixel in enumerate(col):
             mean_h += y * pixel
     mean_h = round(mean_h / np.sum(lungs))
+    coef_of_lung_sizes = np.sum(lung1) / np.sum(lung2)
     right = np.zeros_like(new_image)
     left = np.zeros_like(new_image)
     right[:mean_h] = lungs[:mean_h]
     left[mean_h:] = lungs[mean_h:]
+    if 0.2 < coef_of_lung_sizes < 5:
+        if np.sum(right * lung1) / np.sum(right) > np.sum(right * lung2) / np.sum(right):
+            right = lung1
+            left = lung2
+        else:
+            right = lung2
+            left = lung1
     return left, right
 
 
 def read_files(files):
+    # creating folder for user
+    folder_name = generate_folder_name()
+    path = 'images/' + folder_name
+    create_folder(path)
+    
     paths = []
     for file in files:
-        # creating folder for user
-        folder_name = generate_folder_name()
-        path = 'images/' + folder_name
-        create_folder(path)
-        
         paths.append([])
 
         # saving file from user
@@ -181,39 +192,27 @@ def read_files(files):
             images = nib.load(file_path)
             images = np.array(images.dataobj)
             images = np.moveaxis(images, -1, 0)
-                
+
         elif file.name.endswith('.dcm'):
             # loading
             ds = dcmread(file_path)
             images = ds.pixel_array
-            
+
             # Заглушка для теста
             if images.ndim == 2:
                 images = [images]
-        
-        elif file.name.endswith('.rar'):
-            patoolib.extract_archive(file_path, outdir=path)
-            
-            images = []
-            # create_folder(rar_path)
-            for dcm in os.listdir(path):
-                if dcm.endswith('.dcm'):
-                    ds = dcmread(os.path.join(path, dcm))
-                    img = ds.pixel_array
-                    images.append(img)
-        
+
         else:
             # Заглузка для теста на пнг
             with open(file_path, 'wb') as f:
                 f.write(file.getvalue())
-
 
             paths[-1].append(file_path)
             return paths, folder_name
         
         
         os.remove(file_path)  # clearing   
-        
+
         for i, image in enumerate(images):  # saving every slice in NIftI
             # windowing
             image = window_image(image)
@@ -245,55 +244,46 @@ def get_predictions(paths, models, transforms, multi_class=True):
 
         with torch.no_grad():
             pred = binary_model(X)
-            lung = lung_model(X)
-
             img = X.squeeze().cpu()
             pred = pred.squeeze().cpu()
             pred = torch.argmax(pred, 0).float()
-            lung = lung.squeeze().cpu()
-            lung = torch.argmax(lung, 0).float()
-
+            lung = lung_segmentation(np.array(img), np.array(pred))
             # if multi class we should use both models to predict
-            if multi_class:
+            if multi_class and torch.sum(pred) > 0:
                 multi_output = multi_model(X)
                 multi_pred = multi_output.squeeze().cpu()
                 multi_pred = torch.argmax(multi_pred, 0).float()
                 multi_pred = (multi_pred % 3)  # model on trained on 3 classes but using only 2
-                pred = pred + (multi_pred == 2)  # ground-glass from binary model and consolidation from second
+                pred = pred + pred * (multi_pred == 2)  # ground-glass from binary model and consolidation from second
             pred = pred  # to [0;1] range
-            yield img.numpy(), pred.numpy(), lung.numpy()
-
-
-def combo_with_lungs(disease, lungs):
-    return disease * (lungs == 1), disease * (lungs == 2)
+            yield img.numpy(), pred.numpy(), lung
 
 
 def make_masks(paths, models, transforms, multi_class=True):
     for path, (img, pred, lung) in zip(paths, get_predictions(paths, models, transforms, multi_class)):
-        lung_left = (lung == 1)
-        lung_right = (lung == 2)
+        lung_left = lung[0]
+        lung_right = lung[1]
         not_disease = (pred == 0)
+        sum_right_lung = np.sum(lung_right) / 100
+        sum_left_lung = np.sum(lung_left) / 100
         if multi_class:
             consolidation = (pred == 2)  # red channel
             ground_glass = (pred == 1)  # green channel
 
             img = np.array([np.zeros_like(img), ground_glass, consolidation]) + img * not_disease
-
-            print(np.sum(ground_glass * lung_left))
-            print(np.sum(lung_left))
-            print(np.sum(ground_glass * lung_left) / np.sum(lung_left))
+            gg_left = ground_glass * lung_left
+            gg_right = ground_glass * lung_right
+            cs_left = consolidation * lung_left
+            cs_right = consolidation * lung_right
+            gg_left_percents = np.sum(gg_left) / sum_left_lung
+            gg_right_percents = np.sum(gg_right) / sum_right_lung
+            cs_left_percents = np.sum(cs_left) / sum_left_lung
+            cs_right_percents = np.sum(cs_right) / sum_right_lung
             annotation = {
                 'ground_glass':
-                [
-                    np.sum(ground_glass * lung_left) / np.sum(lung_left) * 100, 
-                    np.sum(ground_glass * lung_right) / np.sum(lung_right) * 100
-                ],
+                    [gg_left_percents, gg_right_percents],
                 'consolidation':
-                [
-                    np.sum(consolidation * lung_left) / np.sum(lung_left) * 100, 
-                    np.sum(consolidation * lung_right) / np.sum(lung_right) * 100
-                ]
-            }
+                    [cs_left_percents, cs_right_percents]}
         else:
             # disease percents
             disease = (pred == 1)
@@ -301,10 +291,10 @@ def make_masks(paths, models, transforms, multi_class=True):
             annotation = {
                 'disease':
                     [
-                        np.sum(disease * lung_left) / np.sum(lung_left) * 100, 
+                        np.sum(disease * lung_left) / np.sum(lung_left) * 100,
                         np.sum(disease * lung_right) / np.sum(lung_right) * 100
                     ]
-                }
+            }
 
             img = np.array([np.zeros_like(img), disease, disease]) + img * not_disease
 
