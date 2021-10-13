@@ -9,7 +9,7 @@ from production import read_files, get_setup, make_masks, create_folder, make_le
 import shutil
 
 
-@st.cache
+@st.cache(show_spinner=False, allow_input_mutation=True)
 def cached_get_setup():
     return get_setup()
 
@@ -40,13 +40,13 @@ def main():
     """,
         unsafe_allow_html=True,
     )
-    for folder in ['segmentations/', 'images/']:
+    for folder in ['segmentations/', 'images/', 'checkpoints/']:
         create_folder(folder)
 
     st.title('Сегментация поражения легких коронавирусной пневмонией')
 
     st.subheader("Загрузка файлов")
-    filenames = st.file_uploader('Выберите или ператащите сюда снимки', type=['png', 'jpeg', 'jpg', '.nii', '.nii.gz'],
+    filenames = st.file_uploader('Выберите или ператащите сюда снимки', type=['png', '.nii', '.nii.gz', '.dcm'],
                                  accept_multiple_files=True)
 
     multi_class = st.checkbox(label='Мульти-классовая сегментация', value=False)
