@@ -7,6 +7,7 @@ import numpy as np
 
 import nibabel as nib
 from pydicom import dcmread
+import patoolib
 
 import random
 import string
@@ -162,15 +163,15 @@ def lung_segmentation(image, disease):
 
 
 def read_files(files):
-    # creating folder for user
-    folder_name = generate_folder_name()
-    path = 'images/' + folder_name
-    create_folder(path)
-
     paths = []
     for file in files:
-        paths.append([])
+        # creating folder for user
+        folder_name = generate_folder_name()
+        path = 'images/' + folder_name
+        create_folder(path)
         
+        paths.append([])
+
         # saving file from user
         file_path = path + file.name
         open(file_path, 'wb').write(file.getvalue())
@@ -190,13 +191,27 @@ def read_files(files):
             if images.ndim == 2:
                 images = [images]
         
+        elif file.name.endswith('.rar'):
+            patoolib.extract_archive(file_path, outdir=path)
+            
+            images = []
+            # create_folder(rar_path)
+            for dcm in os.listdir(path):
+                if dcm.endswith('.dcm'):
+                    ds = dcmread(os.path.join(path, dcm))
+                    img = ds.pixel_array
+                    images.append(img)
+        
         else:
+            # Заглузка для теста на пнг
             with open(file_path, 'wb') as f:
                 f.write(file.getvalue())
 
 
             paths[-1].append(file_path)
             return paths, folder_name
+        
+        
         os.remove(file_path)  # clearing   
         
         for i, image in enumerate(images):  # saving every slice in NIftI

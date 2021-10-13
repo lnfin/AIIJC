@@ -119,3 +119,4 @@ widgetsnbextension==3.5.1
 pydicom==2.2.2
 xlwt==1.3.0
 openpyxl==3.0.9
+patool==1.12
