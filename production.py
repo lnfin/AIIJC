@@ -174,13 +174,13 @@ def lung_segmentation(image, disease):
 
 
 def read_files(files):
-    # creating folder for user
-    folder_name = generate_folder_name()
-    path = 'images/' + folder_name
-    create_folder(path)
-    
     paths = []
     for file in files:
+        # creating folder for user
+        folder_name = generate_folder_name()
+        path = 'images/' + folder_name
+        create_folder(path)
+        
         paths.append([])
 
         # saving file from user
@@ -201,7 +201,18 @@ def read_files(files):
             # Заглушка для теста
             if images.ndim == 2:
                 images = [images]
-
+        
+        elif file.name.endswith('.rar'):
+            patoolib.extract_archive(file_path, outdir=path)
+            
+            images = []
+            # create_folder(rar_path)
+            for dcm in os.listdir(path):
+                if dcm.endswith('.dcm'):
+                    ds = dcmread(os.path.join(path, dcm))
+                    img = ds.pixel_array
+                    images.append(img)
+        
         else:
             # Заглузка для теста на пнг
             with open(file_path, 'wb') as f:
