@@ -169,8 +169,6 @@ def lung_segmentation(image, disease):
         else:
             right = lung2
             left = lung1
-    cv2.imwrite('left.png', left)
-    cv2.imwrite('right.png', right)
     return left, right
 
 
