@@ -123,35 +123,39 @@ def window_image(image, window_center=-600, window_width=1500):
     return window_image
 
 
-def lung_segmentation(file_name):
-    image = io.imread(file_name, as_gray=True) / 255.0
+def lung_segmentation(image, disease):
     h, w = image.shape
-    image_2d = image.reshape(h * w, 1)
-    num_colors = 3
-    k_means_cluster = cluster.KMeans(n_clusters=int(num_colors))
-    k_means_cluster.fit(image_2d)
-    cluster_centers = k_means_cluster.cluster_centers_
-    cluster_labels = k_means_cluster.labels_
-    new_image = cluster_centers[cluster_labels].reshape(h, w) * 255.0
-    new_image = new_image.astype('uint8')
-    lower = (200)
-    upper = (255)
+    mean_h = 0
+    pixels = np.sum(image)
+    lower = (round(pixels / (w * h) * 1.7),)
+    new_image = image
+    upper = (255,)
     thresh = cv2.inRange(new_image, lower, upper)
-    cntrs_info = []
+    thresh = thresh[thresh + disease >= 1] = 1
+    contours_info = []
     contours = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
     contours = contours[0] if len(contours) == 2 else contours[1]
     index = 0
-    for cntr in contours:
-        area = cv2.contourArea(cntr)
-        cntrs_info.append((index, area))
+    for contour in contours:
+        area = cv2.contourArea(contour)
+        contours_info.append((index, area))
         index = index + 1
-    cntrs_info.sort(key=lambda x: x[1], reverse=True)
-    result = np.zeros_like(new_image)
-    index_first = cntrs_info[2][0]
-    cv2.drawContours(result, [contours[index_first]], 0, (255), -1)
-    index_second = cntrs_info[1][0]
-    cv2.drawContours(result, [contours[index_second]], 0, (255), -1)
-    return result
+    contours_info.sort(key=lambda x: x[1], reverse=True)
+    lungs = np.zeros_like(new_image)
+    if len(contours_info) >= 3:
+        index_second = contours_info[1][0]
+        cv2.drawContours(lungs, [contours[index_second]], 0, (255), -1)
+        index_first = contours_info[2][0]
+        cv2.drawContours(lungs, [contours[index_first]], 0, (255), -1)
+    for x, col in enumerate(lungs):
+        for y, pixel in enumerate(col):
+            mean_h += y * pixel
+    mean_h = round(mean_h / np.sum(lungs))
+    right = np.zeros_like(new_image)
+    left = np.zeros_like(new_image)
+    right[:mean_h] = lungs[:mean_h]
+    left[mean_h:] = lungs[mean_h:]
+    return left, right
 
 
 def read_files(files):
