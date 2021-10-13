@@ -4,7 +4,10 @@ from torch.utils.data import Dataset, DataLoader
 import cv2
 import torch
 import numpy as np
+
 import nibabel as nib
+from pydicom import dcmread
+
 import random
 import string
 import os
@@ -158,41 +161,50 @@ def read_files(files):
     # creating folder for user
     folder_name = generate_folder_name()
     path = 'images/' + folder_name
-    if not os.path.exists(path):
-        os.mkdir(path)
+    create_folder(path)
 
     paths = []
     for file in files:
         paths.append([])
+        
+        # saving file from user
+        file_path = path + file.name
+        open(file_path, 'wb').write(file.getvalue())
         # if NIfTI we should get slices
         if file.name.endswith('.nii') or file.name.endswith('.nii.gz'):
-            # saving file from user
-            nii_path = path + file.name
-            open(nii_path, 'wb').write(file.getvalue())
-
             # loading
-            images = nib.load(nii_path)
+            images = nib.load(file_path)
             images = np.array(images.dataobj)
             images = np.moveaxis(images, -1, 0)
-
-            os.remove(nii_path)  # clearing
-
-            for i, image in enumerate(images):  # saving every slice in NIftI
-                # windowing
-                image = window_image(image)
-                image += abs(np.min(image))
-                image = image / np.max(image)
-
-                # saving
-                image_path = path + file.name.split('.')[0] + f'_{i}.png'
-                cv2.imwrite(image_path, image * 255)
-                paths[-1].append(image_path)
-
+                
+        elif file.name.endswith('.dcm'):
+            # loading
+            ds = dcmread(file_path)
+            images = ds.pixel_array
+            
+            # Заглушка для теста
+            if images.ndim == 2:
+                images = [images]
+        
         else:
-            with open(path + file.name, 'wb') as f:
+            with open(file_path, 'wb') as f:
                 f.write(file.getvalue())
 
-            paths[-1].append(path + file.name)
+
+            paths[-1].append(file_path)
+            return paths, folder_name
+        os.remove(file_path)  # clearing   
+        
+        for i, image in enumerate(images):  # saving every slice in NIftI
+            # windowing
+            image = window_image(image)
+            image += abs(np.min(image))
+            image = image / np.max(image)
+
+            # saving
+            image_path = path + file.name.split('.')[0] + f'_{i}.png'
+            cv2.imwrite(image_path, image * 255)
+            paths[-1].append(image_path)
     return paths, folder_name
 
 
@@ -248,15 +260,32 @@ def make_masks(paths, models, transforms, multi_class=True):
 
             img = np.array([np.zeros_like(img), ground_glass, consolidation]) + img * not_disease
 
-            annotation = f'              left   |   right\n' \
-                         f' Ground-glass - {np.sum(ground_glass * lung_left) / np.sum(lung_left) * 100:.1f}% | {np.sum(ground_glass * lung_right) / np.sum(lung_right) * 100:.1f}%\n' \
-                         f'Consolidation - {np.sum(consolidation * lung_left) / np.sum(lung_left) * 100:.1f}% | {np.sum(consolidation * lung_right) / np.sum(lung_right) * 100:.1f}%'
+            print(np.sum(ground_glass * lung_left))
+            print(np.sum(lung_left))
+            print(np.sum(ground_glass * lung_left) / np.sum(lung_left))
+            annotation = {
+                'ground_glass':
+                [
+                    np.sum(ground_glass * lung_left) / np.sum(lung_left) * 100, 
+                    np.sum(ground_glass * lung_right) / np.sum(lung_right) * 100
+                ],
+                'consolidation':
+                [
+                    np.sum(consolidation * lung_left) / np.sum(lung_left) * 100, 
+                    np.sum(consolidation * lung_right) / np.sum(lung_right) * 100
+                ]
+            }
         else:
             # disease percents
             disease = (pred == 1)
 
-            annotation = f'              left   |   right\n' \
-                         f'Disease - {np.sum(disease * lung_left) / np.sum(lung_left) * 100:.1f}%  |  {np.sum(disease * lung_right) / np.sum(lung_right) * 100:.1f}%'
+            annotation = {
+                'disease':
+                    [
+                        np.sum(disease * lung_left) / np.sum(lung_left) * 100, 
+                        np.sum(disease * lung_right) / np.sum(lung_right) * 100
+                    ]
+                }
 
             img = np.array([np.zeros_like(img), disease, disease]) + img * not_disease
 
