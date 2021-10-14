@@ -158,7 +158,7 @@ def lung_segmentation(image, disease):
     for x, col in enumerate(lungs):
         for y, pixel in enumerate(col):
             mean_w += x * pixel
-    mean_w = round(mean_w / np.sum(lungs))
+    mean_w = int(mean_w / np.sum(lungs))
     coef_of_lung_sizes = np.sum(lung1) / np.sum(lung2)
     right = np.zeros_like(new_image)
     left = np.zeros_like(new_image)
