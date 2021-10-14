@@ -249,48 +249,44 @@ def get_predictions(paths, models, transforms, multi_class=True):
 
 def make_masks(paths, models, transforms, multi_class=True):
     for path, (img, pred, lung) in zip(paths, get_predictions(paths, models, transforms, multi_class)):
-        lung_left = lung[0]
-        lung_right = lung[1]
+        left = lung[0]
+        right = lung[1]
         not_disease = (pred == 0)
-        sum_right_lung = np.sum(lung_right) / 100
-        sum_left_lung = np.sum(lung_left) / 100
+        lung_left = np.sum(left)
+        lung_right = np.sum(right)
         if multi_class:
             consolidation = (pred == 2)  # red channel
             ground_glass = (pred == 1)  # green channel
-
             img = np.array([np.zeros_like(img), ground_glass, consolidation]) + img * not_disease
-            gg_left = ground_glass * lung_left
-            gg_right = ground_glass * lung_right
-            cs_left = consolidation * lung_left
-            cs_right = consolidation * lung_right
-            gg_left_percents = np.sum(gg_left) / sum_left_lung
-            gg_right_percents = np.sum(gg_right) / sum_right_lung
-            cs_left_percents = np.sum(cs_left) / sum_left_lung
-            cs_right_percents = np.sum(cs_right) / sum_right_lung
+            gg_left = ground_glass * left
+            gg_right = ground_glass * right
+            cs_left = consolidation * left
+            cs_right = consolidation * right
+            gg_left_percents = np.sum(gg_left) / lung_left * 100
+            gg_right_percents = np.sum(gg_right) / lung_right * 100
+            cs_left_percents = np.sum(cs_left) / lung_left * 100
+            cs_right_percents = np.sum(cs_right) / lung_right * 100
             annotation = {
-                'ground_glass':
-                    [gg_left_percents, gg_right_percents],
-                'consolidation':
-                    [cs_left_percents, cs_right_percents]}
+                'ground_glass': [gg_left_percents, gg_right_percents],
+                'consolidation': [cs_left_percents, cs_right_percents]}
+            left_data = (left, cs_left, gg_left)
+            right_data = (right, cs_right, gg_left)
         else:
             # disease percents
             disease = (pred == 1)
-
+            disease_left = disease * left
+            disease_right = disease * right
             annotation = {
-                'disease':
-                    [
-                        np.sum(disease * lung_left) / np.sum(lung_left) * 100,
-                        np.sum(disease * lung_right) / np.sum(lung_right) * 100
-                    ]
-            }
-
+                'disease': [np.sum(disease_left) / lung_left * 100,
+                            np.sum(disease_right) / lung_right * 100]}
             img = np.array([np.zeros_like(img), disease, disease]) + img * not_disease
-
+            left_data = (left, disease_left)
+            right_data = (right, disease_right)
         img = img.swapaxes(0, -1)
         img = np.round(img * 255)
         img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
         img = cv2.flip(img, 0)
-        yield img, annotation, path
+        yield img, annotation, path, np.array(left_data, right_data)
 
 
 class ProductionCovid19Dataset(Dataset):
