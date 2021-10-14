@@ -130,7 +130,7 @@ def lung_segmentation(image, disease):
     image = image.copy() * 255
     disease = np.array(disease.copy() * 255, dtype=np.int)
     h, w = image.shape
-    mean_h = 0
+    mean_w = 0
     pixels = np.sum(image)
     lower = round(pixels / (w * h) * 1.7)
     lower = (min(lower, 180),)
@@ -157,15 +157,13 @@ def lung_segmentation(image, disease):
     lungs = lung1 + lung2
     for x, col in enumerate(lungs):
         for y, pixel in enumerate(col):
-            mean_h += y * pixel
-    mean_h = round(mean_h / np.sum(lungs))
+            mean_w += x * pixel
+    mean_w = round(mean_w / np.sum(lungs))
     coef_of_lung_sizes = np.sum(lung1) / np.sum(lung2)
     right = np.zeros_like(new_image)
     left = np.zeros_like(new_image)
-    print(mean_h)
-    mean_h = int(mean_h)
-    right[:mean_h] = lungs[:mean_h]
-    left[mean_h:] = lungs[mean_h:]
+    right[:, mean_w] = lungs[:, mean_w]
+    left[:, mean_w:] = lungs[:, mean_w:]
     if 0.2 < coef_of_lung_sizes < 5:
         if np.sum(right * lung1) / np.sum(right) > np.sum(right * lung2) / np.sum(right):
             right = lung1
@@ -183,7 +181,7 @@ def read_files(files):
         folder_name = generate_folder_name()
         path = 'images/' + folder_name
         create_folder(path)
-        
+
         paths.append([])
 
         # saving file from user
@@ -193,16 +191,15 @@ def read_files(files):
         if file.name.endswith('.dcm'):
             # Single dicom
             paths[-1].append(file_path)
-        
+
         elif file.name.endswith('.rar'):
             patoolib.extract_archive(file_path, outdir=path)
-            print(path)
             images = []
             # create_folder(rar_path)
             for dcm in os.listdir(path):
                 if dcm.endswith('.dcm'):
                     paths[-1].append(os.path.join(path, dcm))
-        
+
         else:
             # Заглузка для теста на пнг
             with open(file_path, 'wb') as f:
@@ -210,7 +207,7 @@ def read_files(files):
 
             paths[-1].append(file_path)
             return paths, folder_name
-        
+
         os.remove(file_path)  # clearing   
 
     return paths, folder_name
@@ -307,14 +304,18 @@ class ProductionCovid19Dataset(Dataset):
 
     def __getitem__(self, index):
         path = self.paths[index]
-        image = dcmread(path).pixel_array
+        dicom = dcmread(path)
+        original_image = dicom.pixel_array
+        try:
+            orientation = dicom.ImageOrientationPatient
+        except AttributeError:
+            orientation = None
+        print(orientation)
         # image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        image = window_image(image)
-
-
+        image = window_image(original_image)
         if self.transform:
             transformed = self.transform(image=image)
             image = transformed['image']
         image = torch.from_numpy(np.array([image], dtype=np.float))
         image = image.type(torch.FloatTensor)
-        return image, 'None'
+        return image, original_image
