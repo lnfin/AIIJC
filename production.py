@@ -130,7 +130,7 @@ def lung_segmentation(image, disease):
     image = image.copy() * 255
     disease = np.array(disease.copy() * 255, dtype=np.int)
     h, w = image.shape
-    mean_h = 0
+    mean_w = 0
     pixels = np.sum(image)
     lower = round(pixels / (w * h) * 1.7)
     lower = (min(lower, 180),)
@@ -157,13 +157,13 @@ def lung_segmentation(image, disease):
     lungs = lung1 + lung2
     for x, col in enumerate(lungs):
         for y, pixel in enumerate(col):
-            mean_h += y * pixel
-    mean_h = round(mean_h / np.sum(lungs))
+            mean_w += x * pixel
+    mean_w = round(mean_w / np.sum(lungs))
     coef_of_lung_sizes = np.sum(lung1) / np.sum(lung2)
     right = np.zeros_like(new_image)
     left = np.zeros_like(new_image)
-    right[:mean_h] = lungs[:mean_h]
-    left[mean_h:] = lungs[mean_h:]
+    right[:, mean_w] = lungs[:, mean_w]
+    left[:, mean_w:] = lungs[:, mean_w:]
     if 0.2 < coef_of_lung_sizes < 5:
         if np.sum(right * lung1) / np.sum(right) > np.sum(right * lung2) / np.sum(right):
             right = lung1
