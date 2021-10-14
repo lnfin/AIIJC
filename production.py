@@ -182,15 +182,13 @@ def read_files(files):
         path = 'images/' + folder_name
         create_folder(path)
 
-        paths.append([])
-
         # saving file from user
         file_path = path + file.name
         open(file_path, 'wb').write(file.getvalue())
         # if NIfTI we should get slice
         if file.name.endswith('.dcm'):
             # Single dicom
-            paths[-1].append(file_path)
+            paths.append([file_path])
 
         elif file.name.endswith('.rar'):
             patoolib.extract_archive(file_path, outdir=path)
@@ -198,7 +196,9 @@ def read_files(files):
             # create_folder(rar_path)
             for dcm in os.listdir(path):
                 if dcm.endswith('.dcm'):
-                    paths[-1].append(os.path.join(path, dcm))
+                    images.append(os.path.join(path, dcm))
+                    
+            paths.append(images)
 
         else:
             # Заглузка для теста на пнг
@@ -220,7 +220,7 @@ def create_folder(path):
 
 def get_predictions(paths, models, transforms, multi_class=True):
     # preparing
-    binary_model, multi_model, lung_model = models
+    binary_model, multi_model = models
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     dataloader = DataLoader(ProductionCovid19Dataset(paths, transform=transforms[0]), batch_size=1, drop_last=False)
 
@@ -306,6 +306,7 @@ class ProductionCovid19Dataset(Dataset):
         path = self.paths[index]
         dicom = dcmread(path)
         original_image = dicom.pixel_array
+        print('DTYPE ', original_image.dtype)
         try:
             orientation = dicom.ImageOrientationPatient
         except AttributeError:
@@ -318,4 +319,4 @@ class ProductionCovid19Dataset(Dataset):
             image = transformed['image']
         image = torch.from_numpy(np.array([image], dtype=np.float))
         image = image.type(torch.FloatTensor)
-        return image, original_image
+        return image, 'None'
