@@ -23,7 +23,7 @@ def get_setup():
     transforms = []
 
     # setup for every model
-    for cfg in [BinaryModelConfig, MultiModelConfig, LungsModelConfig]:
+    for cfg in [BinaryModelConfig, MultiModelConfig]:
         # getting model
         model = get_model(cfg)(cfg)
         model.load_state_dict(torch.load(cfg.best_dict, map_location=device))
