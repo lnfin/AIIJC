@@ -183,9 +183,9 @@ def read_files(files):
         create_folder(path)
 
         # saving file from user
-        file_path = path + file.name
+        file_path = os.path.join(path, file.name)
         open(file_path, 'wb').write(file.getvalue())
-        # if NIfTI we should get slice
+
         if file.name.endswith('.dcm'):
             # Single dicom
             paths.append([file_path])
@@ -207,8 +207,6 @@ def read_files(files):
 
             paths[-1].append(file_path)
             return paths, folder_name
-
-        os.remove(file_path)  # clearing   
 
     return paths, folder_name
 
@@ -289,8 +287,8 @@ def make_masks(paths, models, transforms, multi_class=True):
                             np.sum(disease_right) / lung_right * 100]}
             img = np.array([np.zeros_like(img), disease, disease]) + img * not_disease
             original = np.array([np.zeros_like(original), disease, disease]) + original * not_disease
-            left_data = (left, disease_left)
-            right_data = (right, disease_right)
+            left_data = (np.sum(left), np.sum(disease_left), 0)
+            right_data = (np.sum(right), np.sum(disease_right), 0)
         img = pre_transforms_of_image(img)
         original = pre_transforms_of_image(original)
 

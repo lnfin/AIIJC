@@ -86,16 +86,50 @@ def main():
 
 
             gallery = []
-            with st.expander("Статистика о пациенте"):
-                info = st.info('Делаем предсказания, пожалуйста, подождите')
-                for _paths in paths:
-                    gallery.append([])
-                    stats = []
-                    data = np.array([[0, 0, 0], [0, 0, 0]], dtype=np.float64)
-                    for idx, (img, original_image, annotation, original_path, _data) in enumerate(
-                            make_masks(_paths, models, transforms, multi_class)):
-                        print(data.shape)
-                        print(_data.shape)
+            for _paths in paths:
+                gallery.append([])
+                stats = []
+                data = np.array([[0, 0, 0], [0, 0, 0]], dtype=np.float64)
+                    
+                # Loading menu
+                name = _paths[0].split('/')[-1].split('.')[0].replace('\\', '/')[:-2]
+                
+                # Display file/patient name
+                with st.expander(f"Информация о {name}"):
+                    if multi_class:
+                        st.markdown(multi_anno, unsafe_allow_html=True)
+                    else:
+                        st.markdown(binary_anno, unsafe_allow_html=True)
+                        
+                    for idx, (img, annotation, original_path, _data) in enumerate(make_masks(_paths, models, transforms, multi_class)):
+                        info = st.info(f'Делаем предсказания , пожалуйста, подождите')    
+                        # Вывод каждого второго    
+                        if idx % 2 == 0:
+                            info.empty()
+                            st.subheader('Slice №' + str(idx + 1))
+
+                            col1, col2 = st.columns(2)
+                            # original image
+                            original = dcmread(original_path).pixel_array
+                            original = window_image(original)
+
+                            col1.header("Оригинал")
+                            col1.image(original, width=350)
+
+                            # show segmentation
+                            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                            img = img / 255  # to [0;1] range
+                            # print(img.shape, img.dtype, img)
+                            col2.header("Сегментация")
+                            col2.image(img, width=350)
+                            if multi_class:
+                                anno = f'''
+                                                <b>Left</b>             |             <b>Right</b>\n
+                                <b>Ground Glass:</b> {annotation['ground_glass'][0]:.2f}% | {annotation['ground_glass'][1]:.2f}%\n
+                                <b>Consolidation:</b> {annotation['consolidation'][0]:.2f}% | {annotation['consolidation'][1]:.2f}%\n
+                                    '''
+                                col2.markdown(anno, unsafe_allow_html=True)
+                                
                         data += _data
                         # Store statistics
                         stat = {}
@@ -128,21 +162,15 @@ def main():
                     info.empty()
 
                     # Display statistics
-                    df = pd.json_normalize(stats)
-                    df.columns = [
-                        np.array(["ID", "left lung", "", "right lung", " ", "both", "  "]),
-                        np.array(["", "Ground glass", "Consolidation", "Ground glass", "Consolidation", "Ground glass",
-                                  "Consolidation"])
-                    ]
-
                     print(data)
                     
                     df = pd.json_normalize(stats)
                     if multi_class:
-                        results = {
-                            'disease_left': data[0][1] / data[0][0],
-                            'disease_right': data[1][1] / data[1][0]
-                        }
+                        df.columns = [
+                            np.array(["ID", "left lung", "", "right lung", " ", "both", "  "]),
+                            np.array(["", "Ground glass", "Consolidation", "Ground glass", "Consolidation", "Ground glass",
+                                    "Consolidation"])
+                        ]
 
                         df = df.append(pd.Series([
                             -1,
