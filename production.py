@@ -280,8 +280,8 @@ def make_masks(paths, models, transforms, multi_class=True):
                 'disease': [np.sum(disease_left) / lung_left * 100,
                             np.sum(disease_right) / lung_right * 100]}
             img = np.array([np.zeros_like(img), disease, disease]) + img * not_disease
-            left_data = (left, disease_left)
-            right_data = (right, disease_right)
+            left_data = (np.sum(left), np.sum(disease_left), 0)
+            right_data = (np.sum(right), np.sum(disease_right), 0)
         img = img.swapaxes(0, -1)
         img = np.round(img * 255)
         img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
