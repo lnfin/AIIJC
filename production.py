@@ -11,6 +11,7 @@ import os
 from config import BinaryModelConfig, MultiModelConfig
 from PIL import Image, ImageFont, ImageDraw
 import patoolib
+from inference import window_image
 
 
 def get_setup():

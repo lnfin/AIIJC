@@ -80,7 +80,6 @@ def main():
             <content style="color:Red">●</content> Консолидация\n
             '''
 
-            gallery = []
             for _paths in paths:
                 stats = []
                 mean_annotation = np.array([[0, 0, 0], [0, 0, 0]], dtype=np.float64)
@@ -137,6 +136,7 @@ def main():
                         ds.PixelRepresentation = 0
                         ds.PixelData = img_to_dicom.tobytes()
                         ds.save_as(path)
+                        print(path)
 
                         stat = {'id': idx + 1}
                         if multi_class:
@@ -160,10 +160,8 @@ def main():
                         stats.append(stat)
 
                         info = st.info(f'Делаем предсказания , пожалуйста, подождите')
-                    print(stats)
                     info.empty()
                     # Display statistics
-                    print(mean_annotation)
                     df = pd.json_normalize(stats)
                     if multi_class:
                         df.columns = [
@@ -216,7 +214,7 @@ def main():
                 # zip_obj.write(annotation_path)
 
             # download segmentation zip
-            # zip_obj.close()
+            zip_obj.close()
 
             with st.expander("Скачать сегментации"):
                 with open(os.path.join(user_dir, 'segmentations.zip'), 'rb') as file:
