@@ -116,8 +116,8 @@ def main():
                             col2.header("Сегментация")
                             col2.image(img, width=350)
                             if multi_class:
-                                anno = f'''
-                                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>Левое</b>             |             <b>Правое</b>\n
+                                anno = '&nbsp;' * 15 + f'''
+                                <b>Левое</b>             |             <b>Правое</b>\n
                                 <b>Матовое стекло:</b> {annotation['ground_glass'][0]:.2f}% | {annotation['ground_glass'][1]:.2f}%\n
                                 <b>Консолидация:</b> {annotation['consolidation'][0]:.2f}% | {annotation['consolidation'][1]:.2f}%\n
                                     '''
