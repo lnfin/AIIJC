@@ -11,7 +11,7 @@ import string
 import os
 from skimage import io
 from sklearn import cluster
-from config import BinaryModelConfig, MultiModelConfig, LungsModelConfig
+from config import BinaryModelConfig, MultiModelConfig
 from PIL import Image, ImageFont, ImageDraw
 import patoolib
 

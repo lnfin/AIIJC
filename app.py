@@ -81,12 +81,6 @@ def main():
                     stats = []
                     for idx, (img, annotation, original_path) in enumerate(make_masks(_paths, models, transforms, multi_class)):
                         
-                        # Display file/patient name
-                        if idx == len(_paths)-1:
-                            info.empty()
-                            name = _paths[0].split('/')[-1].split('.')[0].replace('\\', '/')[:-2]
-                            st.markdown(f'<h3>{name}</h3>', unsafe_allow_html=True)
-                        
                         # Store statistics
                         stat = {}
                         if multi_class:
@@ -109,6 +103,10 @@ def main():
                         gallery[-1].append((original_path, img, annotation))
                     print(stats)
                     
+                    # Display file/patient name
+                    info.empty()
+                    name = _paths[0].split('/')[-1].split('.')[0].replace('\\', '/')[:-2]
+                    st.markdown(f'<h3>{name}</h3>', unsafe_allow_html=True)
                     # Display statistics
                     df = pd.json_normalize(stats)
                     df.columns = [
