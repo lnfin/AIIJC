@@ -58,7 +58,7 @@ def main():
         info = st.info('Идет разархивация, пожалуйста, подождите')
         paths, folder_name = read_files(filenames)
         info.empty()
-
+        
         print(paths)
         if not paths or paths == [[]]:
             st.error('Неправильный формат или название файла')
@@ -79,14 +79,7 @@ def main():
                     gallery.append([])
                     stats = []
                     data = np.array([[0, 0, 0], [0, 0, 0]])
-                    for idx, (img, annotation, original_path, _data) in enumerate(
-                            make_masks(_paths, models, transforms, multi_class)):
-                        info.empty()
-                        data += _data
-                        # Display file/patient name
-                        if idx == len(_paths) - 1:
-                            name = _paths[0].split('/')[-1].split('.')[0].replace('\\', '/')[:-2]
-                            st.markdown(f'<h3>{name}</h3>', unsafe_allow_html=True)
+                    for idx, (img, annotation, original_path) in enumerate(make_masks(_paths, models, transforms, multi_class)):
 
                         # Store statistics
                         stat = {}
@@ -110,6 +103,10 @@ def main():
                         gallery[-1].append((original_path, img, annotation))
                     print(stats)
 
+                    # Display file/patient name
+                    info.empty()
+                    name = _paths[0].split('/')[-1].split('.')[0].replace('\\', '/')[:-2]
+                    st.markdown(f'<h3>{name}</h3>', unsafe_allow_html=True)
                     # Display statistics
                     df = pd.json_normalize(stats)
                     df.columns = [

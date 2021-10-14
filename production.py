@@ -11,7 +11,7 @@ import string
 import os
 from skimage import io
 from sklearn import cluster
-from config import BinaryModelConfig, MultiModelConfig, LungsModelConfig
+from config import BinaryModelConfig, MultiModelConfig
 from PIL import Image, ImageFont, ImageDraw
 import patoolib
 
@@ -23,7 +23,7 @@ def get_setup():
     transforms = []
 
     # setup for every model
-    for cfg in [BinaryModelConfig, MultiModelConfig, LungsModelConfig]:
+    for cfg in [BinaryModelConfig, MultiModelConfig]:
         # getting model
         model = get_model(cfg)(cfg)
         model.load_state_dict(torch.load(cfg.best_dict, map_location=device))
@@ -158,7 +158,7 @@ def lung_segmentation(image, disease):
     for x, col in enumerate(lungs):
         for y, pixel in enumerate(col):
             mean_w += x * pixel
-    mean_w = round(mean_w / np.sum(lungs))
+    mean_w = int(mean_w / np.sum(lungs))
     coef_of_lung_sizes = np.sum(lung1) / np.sum(lung2)
     right = np.zeros_like(new_image)
     left = np.zeros_like(new_image)
@@ -194,7 +194,6 @@ def read_files(files):
 
         elif file.name.endswith('.rar'):
             patoolib.extract_archive(file_path, outdir=path)
-
             images = []
             # create_folder(rar_path)
             for dcm in os.listdir(path):
@@ -235,6 +234,7 @@ def get_predictions(paths, models, transforms, multi_class=True):
             img = X.squeeze().cpu()
             pred = pred.squeeze().cpu()
             pred = torch.argmax(pred, 0).float()
+            
             lung = lung_segmentation(np.array(img), np.array(pred))
             # if multi class we should use both models to predict
             if multi_class and torch.sum(pred) > 0:
