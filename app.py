@@ -58,7 +58,7 @@ def main():
         info = st.info('Идет разархивация, пожалуйста, подождите')
         paths, folder_name = read_files(filenames)
         info.empty()
-        
+
         print(paths)
         if not paths or paths == [[]]:
             st.error('Неправильный формат или название файла')
@@ -79,7 +79,8 @@ def main():
                     gallery.append([])
                     stats = []
                     data = np.array([[0, 0, 0], [0, 0, 0]], dtype=np.float64)
-                    for idx, (img, annotation, original_path, _data) in enumerate(make_masks(_paths, models, transforms, multi_class)):
+                    for idx, (img, original_image, annotation, original_path, _data) in enumerate(
+                            make_masks(_paths, models, transforms, multi_class)):
                         print(data.shape)
                         print(_data.shape)
                         data += _data
@@ -116,15 +117,13 @@ def main():
                         np.array(["", "Ground glass", "Consolidation", "Ground glass", "Consolidation", "Ground glass",
                                   "Consolidation"])
                     ]
-                    
-                    
+
                     print(data)
                     if multi_class:
                         results = {
                             'disease_left': data[0][1] / data[0][0],
                             'disease_right': data[1][1] / data[1][0]
                         }
-                    
 
                         df = df.append(pd.Series([
                             -1,
