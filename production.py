@@ -269,8 +269,8 @@ def make_masks(paths, models, transforms, multi_class=True):
             annotation = {
                 'ground_glass': [gg_left_percents, gg_right_percents],
                 'consolidation': [cs_left_percents, cs_right_percents]}
-            left_data = (left, cs_left, gg_left)
-            right_data = (right, cs_right, gg_left)
+            left_data = (np.sum(left), np.sum(cs_left), np.sum(gg_left))
+            right_data = (np.sum(right), np.sum(cs_right), np.sum(gg_left))
         else:
             # disease percents
             disease = (pred == 1)
@@ -286,7 +286,8 @@ def make_masks(paths, models, transforms, multi_class=True):
         img = np.round(img * 255)
         img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
         img = cv2.flip(img, 0)
-        yield img, annotation, path, np.array(left_data, right_data)
+
+        yield img, annotation, path, np.array((left_data, right_data))
 
 
 class ProductionCovid19Dataset(Dataset):
@@ -302,7 +303,6 @@ class ProductionCovid19Dataset(Dataset):
         path = self.paths[index]
         dicom = dcmread(path)
         original_image = dicom.pixel_array
-        print('DTYPE ', original_image.dtype)
         try:
             orientation = dicom.ImageOrientationPatient
         except AttributeError:

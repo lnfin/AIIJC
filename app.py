@@ -78,9 +78,11 @@ def main():
                 for _paths in paths:
                     gallery.append([])
                     stats = []
-                    data = np.array([[0, 0, 0], [0, 0, 0]])
-                    for idx, (img, annotation, original_path) in enumerate(make_masks(_paths, models, transforms, multi_class)):
-
+                    data = np.array([[0, 0, 0], [0, 0, 0]], dtype=np.float64)
+                    for idx, (img, annotation, original_path, _data) in enumerate(make_masks(_paths, models, transforms, multi_class)):
+                        print(data.shape)
+                        print(_data.shape)
+                        data += _data
                         # Store statistics
                         stat = {}
                         if multi_class:
@@ -114,37 +116,32 @@ def main():
                         np.array(["", "Ground glass", "Consolidation", "Ground glass", "Consolidation", "Ground glass",
                                   "Consolidation"])
                     ]
-
-                    df = df.append(pd.Series([
-                        -1,
-                        df['left lung']['Ground glass'].mean(),
-
-                        df['']['Consolidation'].mean(),
-                        df['right lung']['Ground glass'].mean(),
-                        df[' ']['Consolidation'].mean(),
-                        df['both']['Ground glass'].mean(),
-                        df['  ']['Consolidation'].mean()
-                    ], index=df.columns), ignore_index=True)
-
-                    df['ID'] = df['ID'].astype('int32').replace(-1, 'avg').astype('str')
-
-                    df[["left lung", "", "right lung", " ", "both", "  "]] = df[
-                        ["left lung", "", "right lung", " ", "both", "  "]].round(1).applymap('{:.1f}'.format)
-                    st.dataframe(df)
-                    df.to_excel(os.path.join(user_dir, 'statistics.xlsx'))
+                    
+                    
                     print(data)
                     if multi_class:
-                        results = {
-                            'cs_left': data[0][1] / data[0][0],
-                            'gg_left': data[0][2] / data[0][0],
-                            'cs_right': data[1][1] / data[1][0],
-                            'gg_right': data[1][2] / data[1][0]
-                        }
-                    else:
                         results = {
                             'disease_left': data[0][1] / data[0][0],
                             'disease_right': data[1][1] / data[1][0]
                         }
+                    
+
+                        df = df.append(pd.Series([
+                            -1,
+                            data[0][2] / data[0][0],
+                            data[0][1] / data[0][0],
+                            data[1][2] / data[1][0],
+                            data[1][1] / data[1][0],
+                            data[0][2] / data[0][0] + data[1][2] / data[1][0],
+                            data[0][1] / data[0][0] + data[1][1] / data[1][0]
+                        ], index=df.columns), ignore_index=True)
+
+                        df['ID'] = df['ID'].astype('int32').replace(-1, '3D').astype('str')
+
+                        df[["left lung", "", "right lung", " ", "both", "  "]] = df[
+                            ["left lung", "", "right lung", " ", "both", "  "]].round(1).applymap('{:.1f}'.format)
+                    st.dataframe(df)
+                    df.to_excel(os.path.join(user_dir, 'statistics.xlsx'))
 
                 # annotation_path = os.path.join(user_dir, 'annotation.txt')
                 # with open(annotation_path, mode='w') as f:
