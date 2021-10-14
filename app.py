@@ -5,9 +5,11 @@ import custom.models
 from zipfile import ZipFile
 import os
 import cv2
-from production import read_files, get_setup, make_masks, create_folder, make_legend
+from production import read_files, get_setup, make_masks, create_folder, make_legend, window_image
 import shutil
 import pandas as pd
+from pydicom import dcmread
+
 
 @st.cache(show_spinner=False, allow_output_mutation=True)
 def cached_get_setup():
@@ -46,7 +48,7 @@ def main():
     st.title('Сегментация поражения легких коронавирусной пневмонией')
 
     st.subheader("Загрузка файлов")
-    filenames = st.file_uploader('Выберите или ператащите сюда снимки', type=['.png', '.nii', '.dcm', '.rar'],
+    filenames = st.file_uploader('Выберите или ператащите сюда снимки', type=['.png', '.dcm', '.rar'],
                                  accept_multiple_files=True)
 
     multi_class = st.checkbox(label='Мульти-классовая сегментация', value=False)
@@ -159,7 +161,9 @@ def main():
 
                             col1, col2 = st.columns(2)
                             # original image
-                            original = np.array(Image.open(original_path))
+                            original = dcmread(original_path).pixel_array
+                            original = window_image(image)
+
                             col1.header("Оригинал")
                             col1.image(original, width=350)
 

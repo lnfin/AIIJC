@@ -103,8 +103,7 @@ def data_to_paths(data, save_folder):
 
             for i, image in enumerate(images):
                 image = window_image(image)  # windowing
-                image += abs(np.min(image))
-                image = image / np.max(image)
+
                 # saving like png image
                 image_path = os.path.join(save_folder, 'slices', nii_name + '_' + str(i) + '.png')
                 cv2.imwrite(image_path, image * 255)
@@ -122,6 +121,8 @@ def window_image(image, window_center=-600, window_width=1500):
     window_image = image
     window_image[window_image < img_min] = img_min
     window_image[window_image > img_max] = img_max
+    window_image += abs(np.min(window_image))
+    window_image = window_image / np.max(window_image)
     return window_image
 
 
@@ -186,21 +187,10 @@ def read_files(files):
         # saving file from user
         file_path = path + file.name
         open(file_path, 'wb').write(file.getvalue())
-        # if NIfTI we should get slices
-        if file.name.endswith('.nii') or file.name.endswith('.nii.gz'):
-            # loading
-            images = nib.load(file_path)
-            images = np.array(images.dataobj)
-            images = np.moveaxis(images, -1, 0)
-
-        elif file.name.endswith('.dcm'):
-            # loading
-            ds = dcmread(file_path)
-            images = ds.pixel_array
-
-            # Заглушка для теста
-            if images.ndim == 2:
-                images = [images]
+        # if NIfTI we should get slice
+        if file.name.endswith('.dcm'):
+            # Single dicom
+            paths[-1].append(file_path)
         
         elif file.name.endswith('.rar'):
             patoolib.extract_archive(file_path, outdir=path)
@@ -209,9 +199,12 @@ def read_files(files):
             # create_folder(rar_path)
             for dcm in os.listdir(path):
                 if dcm.endswith('.dcm'):
-                    ds = dcmread(os.path.join(path, dcm))
-                    img = ds.pixel_array
-                    images.append(img)
+                    paths[-1].append(os.path.join(path, dcm))
+                    
+            paths[-1].sort()
+            for i in range(len(paths[-1])):
+                if i % 2 == 0:
+                    dcmreaed()
         
         else:
             # Заглузка для теста на пнг
@@ -221,19 +214,8 @@ def read_files(files):
             paths[-1].append(file_path)
             return paths, folder_name
         
-        
         os.remove(file_path)  # clearing   
 
-        for i, image in enumerate(images):  # saving every slice in NIftI
-            # windowing
-            image = window_image(image)
-            image += abs(np.min(image))
-            image = image / np.max(image)
-
-            # saving
-            image_path = path + file.name.split('.')[0] + f'_{i}.png'
-            cv2.imwrite(image_path, image * 255)
-            paths[-1].append(image_path)
     return paths, folder_name
 
 
@@ -327,8 +309,11 @@ class ProductionCovid19Dataset(Dataset):
 
     def __getitem__(self, index):
         path = self.paths[index]
-        image = cv2.imread(path)
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        image = dcmread(path).pixel_array
+        # image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        image = window_image(image)
+
+
         if self.transform:
             transformed = self.transform(image=image)
             image = transformed['image']
