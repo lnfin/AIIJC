@@ -71,7 +71,6 @@ def main():
             create_folder(os.path.join(user_dir, 'annotations'))
 
             zip_obj = ZipFile(user_dir + 'segmentations.zip', 'w')
-            
 
             gallery = []
             with st.expander("Статистика о пациенте"):
@@ -79,8 +78,9 @@ def main():
                 for _paths in paths:
                     gallery.append([])
                     stats = []
+                    data = np.array([[0, 0, 0], [0, 0, 0]])
                     for idx, (img, annotation, original_path) in enumerate(make_masks(_paths, models, transforms, multi_class)):
-                        
+
                         # Store statistics
                         stat = {}
                         if multi_class:
@@ -92,17 +92,17 @@ def main():
                             stat['right lung'] = {
                                 'Ground glass': annotation['ground_glass'][1],
                                 'Consolidation': annotation['consolidation'][1]
-                            }                            
+                            }
                             stat['both lungs'] = {
                                 'Ground glass': sum(annotation['ground_glass']),
-                                'Consolidation': sum(annotation['consolidation'])                                
-                            }  
+                                'Consolidation': sum(annotation['consolidation'])
+                            }
                             stats.append(stat)
 
                         # Store data to gallery
                         gallery[-1].append((original_path, img, annotation))
                     print(stats)
-                    
+
                     # Display file/patient name
                     info.empty()
                     name = _paths[0].split('/')[-1].split('.')[0].replace('\\', '/')[:-2]
@@ -111,27 +111,40 @@ def main():
                     df = pd.json_normalize(stats)
                     df.columns = [
                         np.array(["ID", "left lung", "", "right lung", " ", "both", "  "]),
-                        np.array(["", "Ground glass","Consolidation", "Ground glass", "Consolidation", "Ground glass", "Consolidation"])
+                        np.array(["", "Ground glass", "Consolidation", "Ground glass", "Consolidation", "Ground glass",
+                                  "Consolidation"])
                     ]
-                    
+
                     df = df.append(pd.Series([
                         -1,
                         df['left lung']['Ground glass'].mean(),
-                        
+
                         df['']['Consolidation'].mean(),
                         df['right lung']['Ground glass'].mean(),
                         df[' ']['Consolidation'].mean(),
                         df['both']['Ground glass'].mean(),
                         df['  ']['Consolidation'].mean()
                     ], index=df.columns), ignore_index=True)
-                    
+
                     df['ID'] = df['ID'].astype('int32').replace(-1, 'avg').astype('str')
-                    
-                    df[["left lung", "", "right lung", " ", "both", "  "]] = df[["left lung", "", "right lung", " ", "both", "  "]].round(1).applymap('{:.1f}'.format)
+
+                    df[["left lung", "", "right lung", " ", "both", "  "]] = df[
+                        ["left lung", "", "right lung", " ", "both", "  "]].round(1).applymap('{:.1f}'.format)
                     st.dataframe(df)
                     df.to_excel(os.path.join(user_dir, 'statistics.xlsx'))
-                    
-
+                    print(data)
+                    if multi_class:
+                        results = {
+                            'cs_left': data[0][1] / data[0][0],
+                            'gg_left': data[0][2] / data[0][0],
+                            'cs_right': data[1][1] / data[1][0],
+                            'gg_right': data[1][2] / data[1][0]
+                        }
+                    else:
+                        results = {
+                            'disease_left': data[0][1] / data[0][0],
+                            'disease_right': data[1][1] / data[1][0]
+                        }
 
                 # annotation_path = os.path.join(user_dir, 'annotation.txt')
                 # with open(annotation_path, mode='w') as f:
@@ -146,48 +159,48 @@ def main():
             <content style="color:#00FF00">●</content> Матовое стекло\n
             <content style="color:Red">●</content> Консолидация\n
             '''
-            
+
             with st.expander("Галерея"):
                 st.markdown(color_annotations, unsafe_allow_html=True)
-                
+
                 # for line in list(annotation.keys()):
                 #     st.markdown(line)
                 for patient in gallery:
                     for idx in range(0, len(patient), 2):
-                            original_path, img, annotation = patient[idx]
-                            st.subheader('Slice №' + str(idx+1))
+                        original_path, img, annotation = patient[idx]
+                        st.subheader('Slice №' + str(idx + 1))
 
-                            col1, col2 = st.columns(2)
-                            # original image
-                            original = dcmread(original_path).pixel_array
-                            original = window_image(original)
+                        col1, col2 = st.columns(2)
+                        # original image
+                        original = dcmread(original_path).pixel_array
+                        original = window_image(original)
 
-                            col1.header("Оригинал")
-                            col1.image(original, width=350)
+                        col1.header("Оригинал")
+                        col1.image(original, width=350)
 
-                            # show segmentation
-                            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-                            img = img / 255  # to [0;1] range
-                            # print(img.shape, img.dtype, img)
-                            col2.header("Сегментация")
-                            col2.image(img, width=350)
-                            if multi_class:
-                                anno = f'''
+                        # show segmentation
+                        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                        img = img / 255  # to [0;1] range
+                        # print(img.shape, img.dtype, img)
+                        col2.header("Сегментация")
+                        col2.image(img, width=350)
+                        if multi_class:
+                            anno = f'''
                                              <b>Left</b>             |             <b>Right</b>\n
                             <b>Ground Glass:</b> {annotation['ground_glass'][0]:.2f}% | {annotation['ground_glass'][1]:.2f}%\n
                             <b>Consolidation:</b> {annotation['consolidation'][0]:.2f}% | {annotation['consolidation'][1]:.2f}%\n
                                 '''
-                                col2.markdown(anno, unsafe_allow_html=True)
+                            col2.markdown(anno, unsafe_allow_html=True)
             # download segmentation zip
             zip_obj.close()
-            
+
             with st.expander("Скачать сегментации"):
                 with open(os.path.join(user_dir, 'segmentations.zip'), 'rb') as file:
                     st.download_button(
                         label="Архив сегментаций",
                         data=file,
                         file_name="segmentations.zip")
-                    
+
                 with open(os.path.join(user_dir, 'statistics.xlsx'), 'rb') as file:
                     st.download_button(
                         label="Статистика",
