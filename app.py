@@ -71,8 +71,6 @@ def main():
             create_folder(os.path.join(user_dir, 'segmentations'))
             create_folder(os.path.join(user_dir, 'annotations'))
 
-            zip_obj = ZipFile(user_dir + 'segmentations.zip', 'w')
-
             binary_anno = '''
             <b>Binary mode:</b>\n
             <content style="color:Yellow">●</content> Всё повреждение\n
@@ -87,13 +85,13 @@ def main():
 
             gallery = []
             for _paths in paths:
-                gallery.append([])
                 stats = []
                 data = np.array([[0, 0, 0], [0, 0, 0]], dtype=np.float64)
                     
                 # Loading menu
-                name = _paths[0].split('/')[-1].split('.')[0].replace('\\', '/')[:-2]
+                name = _paths[0].split('/')[-1].split('.')[0].replace('\\', '/')
                 
+                zip_obj = ZipFile(user_dir + f'segmentations_{name}.zip', 'w')
                 # Display file/patient name
                 with st.expander(f"Информация о {name}"):
                     if multi_class:
@@ -101,16 +99,29 @@ def main():
                     else:
                         st.markdown(binary_anno, unsafe_allow_html=True)
                         
-                    for idx, (img, annotation, original_path, _data) in enumerate(make_masks(_paths, models, transforms, multi_class)):
-                        info = st.info(f'Делаем предсказания , пожалуйста, подождите')    
+                    info = st.info(f'Делаем предсказания , пожалуйста, подождите')    
+                    for idx, (img, original, annotation, path, _data) in enumerate(make_masks(_paths, models, transforms, multi_class)):
+                        info.empty()
+                        
+                        # ds = dcmread(path)
+                        # ds.Rows = original.shape[0]
+                        # ds.Columns = original.shape[1]
+                        # ds.PhotometricInterpretation = 'RGB'
+                        # ds.BitsStored = 8
+                        # ds.SamplesPerPixel = 3
+                        # ds.BitsAllocated = 8
+                        # ds.HighBit = ds.BitsStored - 1
+                        # ds.PixelRepresentation = 0
+                        
+                        # ds.PixelData = arr.tobytes()
+                        
                         # Вывод каждого второго    
                         if idx % 2 == 0:
-                            info.empty()
                             st.subheader('Slice №' + str(idx + 1))
 
                             col1, col2 = st.columns(2)
                             # original image
-                            original = dcmread(original_path).pixel_array
+                            original = dcmread(path).pixel_array
                             original = window_image(original)
 
                             col1.header("Оригинал")
@@ -155,8 +166,8 @@ def main():
                             
                         stats.append(stat)
                         
-                        # Store data to gallery
-                        gallery[-1].append((original_path, img, annotation))
+                        info = st.info(f'Делаем предсказания , пожалуйста, подождите')    
+                        
                     print(stats)
 
                     info.empty()
@@ -203,8 +214,8 @@ def main():
                         
                         df[["left lung", "right lung", "both"]] = df[["left lung", "right lung", "both"]].round(1).applymap('{:.1f}'.format)
                 
-                st.dataframe(df)
-                df.to_excel(os.path.join(user_dir, f'statistics_{name}.xlsx'))
+                    st.dataframe(df)
+                    df.to_excel(os.path.join(user_dir, f'statistics_{name}.xlsx'))
 
                 # annotation_path = os.path.join(user_dir, 'annotation.txt')
                 # with open(annotation_path, mode='w') as f:
