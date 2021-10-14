@@ -7,6 +7,7 @@ import cv2
 from production import read_files, get_setup, create_folder
 from inference import make_masks
 import pandas as pd
+from pydicom import dcmread
 
 
 @st.cache(show_spinner=False, allow_output_mutation=True)
@@ -69,12 +70,12 @@ def main():
             create_folder(os.path.join(user_dir, 'annotations'))
 
             binary_anno = '''
-            <b>Binary mode:</b>\n
+            <b>Бинарная сегментация:</b>\n
             <content style="color:Yellow">●</content> Всё повреждение\n
             '''
 
             multi_anno = '''
-            <b>Multi mode:</b>\n
+            <b>Мульти-классовая сегментация:</b>\n
             <content style="color:#00FF00">●</content> Матовое стекло\n
             <content style="color:Red">●</content> Консолидация\n
             '''
@@ -99,23 +100,10 @@ def main():
                     for idx, data in enumerate(make_masks(_paths, models, transforms, multi_class)):
                         img, orig_img, img_to_dicom, annotation, path, _mean_annotation = data
                         info.empty()
-                        print(annotation)
-
-                        # ds = dcmread(path)
-                        # ds.Rows = original.shape[0]
-                        # ds.Columns = original.shape[1]
-                        # ds.PhotometricInterpretation = 'RGB'
-                        # ds.BitsStored = 8
-                        # ds.SamplesPerPixel = 3
-                        # ds.BitsAllocated = 8
-                        # ds.HighBit = ds.BitsStored - 1
-                        # ds.PixelRepresentation = 0
-
-                        # ds.PixelData = arr.tobytes()
 
                         # Вывод каждого второго    
                         if idx % 2 == 0:
-                            st.subheader('Slice №' + str(idx + 1))
+                            st.subheader('Срез №' + str(idx + 1))
 
                             col1, col2 = st.columns(2)
 
@@ -130,16 +118,27 @@ def main():
                             col2.image(img, width=350)
                             if multi_class:
                                 anno = f'''
-                                                <b>Left</b>             |             <b>Right</b>\n
-                                <b>Ground Glass:</b> {annotation['ground_glass'][0]:.2f}% | {annotation['ground_glass'][1]:.2f}%\n
-                                <b>Consolidation:</b> {annotation['consolidation'][0]:.2f}% | {annotation['consolidation'][1]:.2f}%\n
+                                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>Левое</b>             |             <b>Правое</b>\n
+                                <b>Матовое стекло:</b> {annotation['ground_glass'][0]:.2f}% | {annotation['ground_glass'][1]:.2f}%\n
+                                <b>Консолидация:</b> {annotation['consolidation'][0]:.2f}% | {annotation['consolidation'][1]:.2f}%\n
                                     '''
                                 col2.markdown(anno, unsafe_allow_html=True)
 
                         mean_annotation += _mean_annotation
                         # Store statistics
-                        stat = {}
-                        stat['id'] = idx + 1
+                        ds = dcmread(path)
+                        ds.Rows = img_to_dicom.shape[0]
+                        ds.Columns = img_to_dicom.shape[1]
+                        ds.PhotometricInterpretation = 'RGB'
+                        ds.BitsStored = 8
+                        ds.SamplesPerPixel = 3
+                        ds.BitsAllocated = 8
+                        ds.HighBit = ds.BitsStored - 1
+                        ds.PixelRepresentation = 0
+                        ds.PixelData = img_to_dicom.tobytes()
+                        ds.save_as(path)
+
+                        stat = {'id': idx + 1}
                         if multi_class:
                             stat['left lung'] = {
                                 'Ground glass': annotation['ground_glass'][0],
@@ -153,7 +152,6 @@ def main():
                                 'Ground glass': sum(annotation['ground_glass']),
                                 'Consolidation': sum(annotation['consolidation'])
                             }
-
                         else:
                             stat['left lung'] = annotation['disease'][0]
                             stat['right lung'] = annotation['disease'][1]
