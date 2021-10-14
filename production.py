@@ -200,11 +200,6 @@ def read_files(files):
             for dcm in os.listdir(path):
                 if dcm.endswith('.dcm'):
                     paths[-1].append(os.path.join(path, dcm))
-                    
-            paths[-1].sort()
-            for i in range(len(paths[-1])):
-                if i % 2 == 0:
-                    dcmreaed()
         
         else:
             # Заглузка для теста на пнг
