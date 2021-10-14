@@ -181,7 +181,7 @@ def read_files(files):
         folder_name = generate_folder_name()
         path = 'images/' + folder_name
         create_folder(path)
-        
+
         paths.append([])
 
         # saving file from user
@@ -191,16 +191,16 @@ def read_files(files):
         if file.name.endswith('.dcm'):
             # Single dicom
             paths[-1].append(file_path)
-        
+
         elif file.name.endswith('.rar'):
             patoolib.extract_archive(file_path, outdir=path)
-            
+
             images = []
             # create_folder(rar_path)
             for dcm in os.listdir(path):
                 if dcm.endswith('.dcm'):
                     paths[-1].append(os.path.join(path, dcm))
-        
+
         else:
             # Заглузка для теста на пнг
             with open(file_path, 'wb') as f:
@@ -208,7 +208,7 @@ def read_files(files):
 
             paths[-1].append(file_path)
             return paths, folder_name
-        
+
         os.remove(file_path)  # clearing   
 
     return paths, folder_name
@@ -304,14 +304,18 @@ class ProductionCovid19Dataset(Dataset):
 
     def __getitem__(self, index):
         path = self.paths[index]
-        image = dcmread(path).pixel_array
+        dicom = dcmread(path)
+        original_image = dicom.pixel_array
+        try:
+            orientation = dicom.ImageOrientationPatient
+        except AttributeError:
+            orientation = None
+        print(orientation)
         # image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        image = window_image(image)
-
-
+        image = window_image(original_image)
         if self.transform:
             transformed = self.transform(image=image)
             image = transformed['image']
         image = torch.from_numpy(np.array([image], dtype=np.float))
         image = image.type(torch.FloatTensor)
-        return image, 'None'
+        return image, original_image
