@@ -1,14 +1,12 @@
 import streamlit as st
-from PIL import Image
 import numpy as np
 import custom.models
 from zipfile import ZipFile
 import os
 import cv2
-from production import read_files, get_setup, make_masks, create_folder, make_legend, window_image
-import shutil
+from production import read_files, get_setup, create_folder
+from inference import make_masks
 import pandas as pd
-from pydicom import dcmread
 
 
 @st.cache(show_spinner=False, allow_output_mutation=True)
@@ -53,7 +51,6 @@ def main():
 
     multi_class = st.checkbox(label='Мульти-классовая сегментация', value=False)
 
-        
     if st.button('Загрузить') and filenames:
         # Reading files
         info = st.info('Идет разархивация, пожалуйста, подождите')
@@ -75,22 +72,21 @@ def main():
             <b>Binary mode:</b>\n
             <content style="color:Yellow">●</content> Всё повреждение\n
             '''
-            
+
             multi_anno = '''
             <b>Multi mode:</b>\n
             <content style="color:#00FF00">●</content> Матовое стекло\n
             <content style="color:Red">●</content> Консолидация\n
             '''
 
-
             gallery = []
             for _paths in paths:
                 stats = []
-                data = np.array([[0, 0, 0], [0, 0, 0]], dtype=np.float64)
-                    
+                mean_annotation = np.array([[0, 0, 0], [0, 0, 0]], dtype=np.float64)
+
                 # Loading menu
                 name = _paths[0].split('/')[-1].split('.')[0].replace('\\', '/')
-                
+
                 zip_obj = ZipFile(user_dir + f'segmentations_{name}.zip', 'w')
                 # Display file/patient name
                 with st.expander(f"Информация о {name}"):
@@ -98,11 +94,13 @@ def main():
                         st.markdown(multi_anno, unsafe_allow_html=True)
                     else:
                         st.markdown(binary_anno, unsafe_allow_html=True)
-                        
-                    info = st.info(f'Делаем предсказания , пожалуйста, подождите')    
-                    for idx, (img, original, annotation, path, _data) in enumerate(make_masks(_paths, models, transforms, multi_class)):
+
+                    info = st.info(f'Делаем предсказания , пожалуйста, подождите')
+                    for idx, data in enumerate(make_masks(_paths, models, transforms, multi_class)):
+                        img, orig_img, img_to_dicom, annotation, path, _mean_annotation = data
                         info.empty()
-                        
+                        print(annotation)
+
                         # ds = dcmread(path)
                         # ds.Rows = original.shape[0]
                         # ds.Columns = original.shape[1]
@@ -112,20 +110,17 @@ def main():
                         # ds.BitsAllocated = 8
                         # ds.HighBit = ds.BitsStored - 1
                         # ds.PixelRepresentation = 0
-                        
+
                         # ds.PixelData = arr.tobytes()
-                        
+
                         # Вывод каждого второго    
                         if idx % 2 == 0:
                             st.subheader('Slice №' + str(idx + 1))
 
                             col1, col2 = st.columns(2)
-                            # original image
-                            original = dcmread(path).pixel_array
-                            original = window_image(original)
 
                             col1.header("Оригинал")
-                            col1.image(original, width=350)
+                            col1.image(orig_img, width=350)
 
                             # show segmentation
                             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -140,8 +135,8 @@ def main():
                                 <b>Consolidation:</b> {annotation['consolidation'][0]:.2f}% | {annotation['consolidation'][1]:.2f}%\n
                                     '''
                                 col2.markdown(anno, unsafe_allow_html=True)
-                                
-                        data += _data
+
+                        mean_annotation += _mean_annotation
                         # Store statistics
                         stat = {}
                         stat['id'] = idx + 1
@@ -158,62 +153,62 @@ def main():
                                 'Ground glass': sum(annotation['ground_glass']),
                                 'Consolidation': sum(annotation['consolidation'])
                             }
-                            
+
                         else:
                             stat['left lung'] = annotation['disease'][0]
                             stat['right lung'] = annotation['disease'][1]
                             stat['both lung'] = stat['left lung'] + stat['right lung']
-                            
+
                         stats.append(stat)
-                        
-                        info = st.info(f'Делаем предсказания , пожалуйста, подождите')    
-                        
+
+                        info = st.info(f'Делаем предсказания , пожалуйста, подождите')
                     print(stats)
-
                     info.empty()
-
                     # Display statistics
-                    print(data)
-                    
+                    print(mean_annotation)
                     df = pd.json_normalize(stats)
                     if multi_class:
                         df.columns = [
                             np.array(["ID", "left lung", "", "right lung", " ", "both", "  "]),
-                            np.array(["", "Ground glass", "Consolidation", "Ground glass", "Consolidation", "Ground glass",
-                                    "Consolidation"])
+                            np.array(
+                                ["", "Ground glass", "Consolidation", "Ground glass", "Consolidation", "Ground glass",
+                                 "Consolidation"])
                         ]
-
                         df = df.append(pd.Series([
                             -1,
-                            data[0][2] / data[0][0],
-                            data[0][1] / data[0][0],
-                            data[1][2] / data[1][0],
-                            data[1][1] / data[1][0],
-                            data[0][2] / data[0][0] + data[1][2] / data[1][0],
-                            data[0][1] / data[0][0] + data[1][1] / data[1][0]
+                            mean_annotation[0][2] / mean_annotation[0][0],
+                            mean_annotation[0][1] / mean_annotation[0][0],
+                            mean_annotation[1][2] / mean_annotation[1][0],
+                            mean_annotation[1][1] / mean_annotation[1][0],
+                            mean_annotation[0][2] / mean_annotation[0][0] + mean_annotation[1][2] / mean_annotation[1][
+                                0],
+                            mean_annotation[0][1] / mean_annotation[0][0] + mean_annotation[1][1] / mean_annotation[1][
+                                0]
                         ], index=df.columns), ignore_index=True)
 
                         df['ID'] = df['ID'].astype('int32').replace(-1, '3D').astype('str')
 
                         df[["left lung", "", "right lung", " ", "both", "  "]] = df[
                             ["left lung", "", "right lung", " ", "both", "  "]].round(1).applymap('{:.1f}'.format)
-                
+
                     else:
                         df.columns = np.array(["ID", "left lung", "right lung", "both"])
-                        
+
                         df['ID'] = df['ID'].astype('int32').replace(-1, '3D').astype('str')
-                        
+
                         df = df.append(pd.Series([
-                                -1,
-                                data[0][1] / data[0][0],
-                                data[1][1] / data[1][0],
-                                data[0][1] / data[0][0] + data[1][1] / data[1][0]
-                        ], index=df.columns), ignore_index=True)                    
-                        
+                            -1,
+                            mean_annotation[0][1] / mean_annotation[0][0],
+                            mean_annotation[1][1] / mean_annotation[1][0],
+                            mean_annotation[0][1] / mean_annotation[0][0] + mean_annotation[1][1] / mean_annotation[1][
+                                0]
+                        ], index=df.columns), ignore_index=True)
+
                         df['ID'] = df['ID'].astype('int32').replace(-1, '3D').astype('str')
-                        
-                        df[["left lung", "right lung", "both"]] = df[["left lung", "right lung", "both"]].round(1).applymap('{:.1f}'.format)
-                
+
+                        df[["left lung", "right lung", "both"]] = df[["left lung", "right lung", "both"]].round(
+                            1).applymap('{:.1f}'.format)
+
                     st.dataframe(df)
                     df.to_excel(os.path.join(user_dir, f'statistics_{name}.xlsx'))
 
@@ -223,7 +218,7 @@ def main():
                 # zip_obj.write(annotation_path)
 
             # download segmentation zip
-            zip_obj.close()
+            # zip_obj.close()
 
             with st.expander("Скачать сегментации"):
                 with open(os.path.join(user_dir, 'segmentations.zip'), 'rb') as file:
