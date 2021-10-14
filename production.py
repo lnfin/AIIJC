@@ -254,6 +254,9 @@ def make_masks(paths, models, transforms, multi_class=True):
         return img
 
     for path, (img, pred, lung, original) in zip(paths, get_predictions(paths, models, transforms, multi_class)):
+        original = original.squeeze().cpu()
+        original = np.array(original, dtype=np.float)
+        print(img.dtype, img.shape, original.dtype, original.shape)
         left = lung[0]
         right = lung[1]
         not_disease = (pred == 0)
@@ -320,4 +323,6 @@ class ProductionCovid19Dataset(Dataset):
             image = transformed['image']
         image = torch.from_numpy(np.array([image], dtype=np.float))
         image = image.type(torch.FloatTensor)
-        return image, 'None'
+        original_image = torch.from_numpy(np.array([original_image], dtype=np.float))
+        original_image = original_image.type(torch.FloatTensor)
+        return image, original_image
