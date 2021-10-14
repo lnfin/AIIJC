@@ -197,7 +197,7 @@ def read_files(files):
             for dcm in os.listdir(path):
                 if dcm.endswith('.dcm'):
                     images.append(os.path.join(path, dcm))
-                    
+
             paths.append(images)
 
         else:
@@ -225,7 +225,7 @@ def get_predictions(paths, models, transforms, multi_class=True):
     dataloader = DataLoader(ProductionCovid19Dataset(paths, transform=transforms[0]), batch_size=1, drop_last=False)
 
     # prediction
-    for X, _ in dataloader:
+    for X, original_image in dataloader:
         X = X.to(device)
         X = X / torch.max(X)
 
@@ -234,7 +234,7 @@ def get_predictions(paths, models, transforms, multi_class=True):
             img = X.squeeze().cpu()
             pred = pred.squeeze().cpu()
             pred = torch.argmax(pred, 0).float()
-            
+
             lung = lung_segmentation(np.array(img), np.array(pred))
             # if multi class we should use both models to predict
             if multi_class and torch.sum(pred) > 0:
@@ -244,11 +244,18 @@ def get_predictions(paths, models, transforms, multi_class=True):
                 multi_pred = (multi_pred % 3)  # model on trained on 3 classes but using only 2
                 pred = pred + pred * (multi_pred == 2)  # ground-glass from binary model and consolidation from second
             pred = pred  # to [0;1] range
-            yield img.numpy(), pred.numpy(), lung
+            yield img.numpy(), pred.numpy(), lung, original_image
 
 
 def make_masks(paths, models, transforms, multi_class=True):
-    for path, (img, pred, lung) in zip(paths, get_predictions(paths, models, transforms, multi_class)):
+    def pre_transforms_of_image(img):
+        img = img.swapaxes(0, -1)
+        img = np.round(img * 255)
+        img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
+        img = cv2.flip(img, 0)
+        return img
+
+    for path, (img, pred, lung, original) in zip(paths, get_predictions(paths, models, transforms, multi_class)):
         left = lung[0]
         right = lung[1]
         not_disease = (pred == 0)
@@ -258,6 +265,7 @@ def make_masks(paths, models, transforms, multi_class=True):
             consolidation = (pred == 2)  # red channel
             ground_glass = (pred == 1)  # green channel
             img = np.array([np.zeros_like(img), ground_glass, consolidation]) + img * not_disease
+            original = np.array([np.zeros_like(original), ground_glass, consolidation]) + original * not_disease
             gg_left = ground_glass * left
             gg_right = ground_glass * right
             cs_left = consolidation * left
@@ -280,14 +288,13 @@ def make_masks(paths, models, transforms, multi_class=True):
                 'disease': [np.sum(disease_left) / lung_left * 100,
                             np.sum(disease_right) / lung_right * 100]}
             img = np.array([np.zeros_like(img), disease, disease]) + img * not_disease
-            left_data = (np.sum(left), np.sum(disease_left), 0)
-            right_data = (np.sum(right), np.sum(disease_right), 0)
-        img = img.swapaxes(0, -1)
-        img = np.round(img * 255)
-        img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
-        img = cv2.flip(img, 0)
+            original = np.array([np.zeros_like(original), disease, disease]) + original * not_disease
+            left_data = (left, disease_left)
+            right_data = (right, disease_right)
+        img = pre_transforms_of_image(img)
+        original = pre_transforms_of_image(original)
 
-        yield img, annotation, path, np.array((left_data, right_data))
+        yield img, original, annotation, path, np.array((left_data, right_data))
 
 
 class ProductionCovid19Dataset(Dataset):
