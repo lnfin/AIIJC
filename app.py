@@ -80,10 +80,10 @@ def main():
                     gallery.append([])
                     stats = []
                     for idx, (img, annotation, original_path) in enumerate(make_masks(_paths, models, transforms, multi_class)):
-                        info.empty()
                         
                         # Display file/patient name
                         if idx == len(_paths)-1:
+                            info.empty()
                             name = _paths[0].split('/')[-1].split('.')[0].replace('\\', '/')[:-2]
                             st.markdown(f'<h3>{name}</h3>', unsafe_allow_html=True)
                         
@@ -162,7 +162,7 @@ def main():
                             col1, col2 = st.columns(2)
                             # original image
                             original = dcmread(original_path).pixel_array
-                            original = window_image(image)
+                            original = window_image(original)
 
                             col1.header("Оригинал")
                             col1.image(original, width=350)

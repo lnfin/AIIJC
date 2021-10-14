@@ -162,6 +162,8 @@ def lung_segmentation(image, disease):
     coef_of_lung_sizes = np.sum(lung1) / np.sum(lung2)
     right = np.zeros_like(new_image)
     left = np.zeros_like(new_image)
+    print(mean_h)
+    mean_h = int(mean_h)
     right[:mean_h] = lungs[:mean_h]
     left[mean_h:] = lungs[mean_h:]
     if 0.2 < coef_of_lung_sizes < 5:
@@ -194,7 +196,7 @@ def read_files(files):
         
         elif file.name.endswith('.rar'):
             patoolib.extract_archive(file_path, outdir=path)
-            
+            print(path)
             images = []
             # create_folder(rar_path)
             for dcm in os.listdir(path):
@@ -235,6 +237,7 @@ def get_predictions(paths, models, transforms, multi_class=True):
             img = X.squeeze().cpu()
             pred = pred.squeeze().cpu()
             pred = torch.argmax(pred, 0).float()
+            
             lung = lung_segmentation(np.array(img), np.array(pred))
             # if multi class we should use both models to predict
             if multi_class and torch.sum(pred) > 0:
