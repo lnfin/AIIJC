@@ -10,7 +10,7 @@ import string
 import os
 from config import BinaryModelConfig, MultiModelConfig
 from PIL import Image, ImageFont, ImageDraw
-import patoolib
+from pyunpack import Archive
 
 
 def get_setup():
@@ -128,8 +128,9 @@ def read_files(files):
             # Single dicom
             paths.append([file_path])
 
-        elif file.name.endswith('.rar'):
-            patoolib.extract_archive(file_path, outdir=path)
+        elif file.name.endswith('.rar') or file.name.endswith('.zip'):
+            Archive(file_path).extractall(path)
+
             images = []
             # create_folder(rar_path)
             for dcm in os.listdir(path):
