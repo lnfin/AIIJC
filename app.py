@@ -16,7 +16,7 @@ def cached_get_setup():
 
 
 def main():
-    st.set_page_config(page_title='CovidSegmentation') # page_icon = favicon
+    st.set_page_config(page_title='Covid Segmentation') # page_icon = favicon
     
     st.markdown(
         f"""
@@ -123,13 +123,14 @@ def main():
                             col2.header("Сегментация")
                             col2.image(img, width=350)                            
 
+
                             if multi_class:
                                 anno = f'''
                                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>Левое</b>&nbsp;|&nbsp;<b>Правое</b>\n
                                 <b>Матовое стекло:&nbsp;</b> {annotation['ground_glass'][0]:.2f}% | {annotation['ground_glass'][1]:.2f}%\n
                                 <b>Консолидация:&nbsp;&nbsp;&nbsp;</b> {annotation['consolidation'][0]:.2f}% | {annotation['consolidation'][1]:.2f}%\n
                                     '''
-                                st.markdown(anno, unsafe_allow_html=True)
+                                col2.markdown(anno, unsafe_allow_html=True)
 
                         mean_annotation += _mean_annotation
                         # Store statistics
@@ -224,8 +225,6 @@ def main():
                 # with open(annotation_path, mode='w') as f:
                 #         f.write(color_annotations)  
                 # zip_obj.write(annotation_path)
-
-            # download segmentation zip
             
 
             with st.expander("Скачать сегментации"):
