@@ -84,6 +84,8 @@ def main():
             <content style="color:Red">●</content> Консолидация\n
             '''
 
+            all_zip = []
+            all_stats = []
             for _paths in paths:
                 stats = []
                 mean_annotation = np.array([[0, 0, 0], [0, 0, 0]], dtype=np.float64)
@@ -142,7 +144,8 @@ def main():
                         ds.HighBit = ds.BitsStored - 1
                         ds.PixelData = img_to_dicom.tobytes()
                         ds.save_as(path)
-                        print(path)
+                        
+                        zip_obj.write(path)
 
                         stat = {'id': idx + 1}
                         if multi_class:
@@ -223,7 +226,7 @@ def main():
                 # zip_obj.write(annotation_path)
 
             # download segmentation zip
-            zip_obj.close()
+            
 
             with st.expander("Скачать сегментации"):
                 for zip_file in all_zip:
