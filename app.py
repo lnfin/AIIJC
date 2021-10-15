@@ -16,22 +16,24 @@ def cached_get_setup():
 
 
 def main():
-    models, transforms = cached_get_setup()
+    st.set_page_config(page_title='CovidSegmentation') # page_icon = favicon
+    
     st.markdown(
         f"""
     <style>
         .sidebar .sidebar-content {{
-            background: url("https://i.ibb.co/BL3qFQW/background.png");
+            background: url("https://i.ibb.co/XSg54H1/image-2021-10-15-00-43-45.png");
             background-repeat: repeat;
-            background-size: 100% auto;
+            background-size: 100% 100%;
     }}
         .reportview-container {{
-            background: url("https://i.ibb.co/BL3qFQW/background.png");
+            background: url("https://i.ibb.co/XSg54H1/image-2021-10-15-00-43-45.png");
             background-repeat: repeat;
-            background-size: 100% auto;
+            background-size: 100% 100%;
         }}
         .reportview-container .main .block-container{{
             max-width: 850px;
+            
             padding-top: 0rem;
             padding-right: 0rem;
             padding-left: 0rem;
@@ -44,10 +46,12 @@ def main():
     for folder in ['segmentations/', 'images/', 'checkpoints/']:
         create_folder(folder)
 
+    models, transforms = cached_get_setup()
+
     st.title('Сегментация поражения легких коронавирусной пневмонией')
 
     st.subheader("Загрузка файлов")
-    filenames = st.file_uploader('Выберите или ператащите сюда снимки', type=['.png', '.dcm', '.rar'],
+    filenames = st.file_uploader('Выберите или ператащите сюда снимки', type=['.png', '.dcm', '.rar', '.zip'],
                                  accept_multiple_files=True)
 
     multi_class = st.checkbox(label='Мульти-классовая сегментация', value=False)
@@ -80,7 +84,8 @@ def main():
             <content style="color:Red">●</content> Консолидация\n
             '''
 
-            gallery = []
+            all_zip = []
+            all_stats = []
             for _paths in paths:
                 stats = []
                 mean_annotation = np.array([[0, 0, 0], [0, 0, 0]], dtype=np.float64)
@@ -89,6 +94,7 @@ def main():
                 name = _paths[0].split('/')[-1].split('.')[0].replace('\\', '/')
 
                 zip_obj = ZipFile(user_dir + f'segmentations_{name}.zip', 'w')
+                all_zip.append(f'segmentations_{name}.zip')
                 # Display file/patient name
                 with st.expander(f"Информация о {name}"):
                     if multi_class:
@@ -115,28 +121,31 @@ def main():
                             img = img / 255  # to [0;1] range
                             # print(img.shape, img.dtype, img)
                             col2.header("Сегментация")
-                            col2.image(img, width=350)
+                            col2.image(img, width=350)                            
+
                             if multi_class:
-                                anno = '&nbsp;' * 15 + f'''
-                                <b>Левое</b>             |             <b>Правое</b>\n
-                                <b>Матовое стекло:</b> {annotation['ground_glass'][0]:.2f}% | {annotation['ground_glass'][1]:.2f}%\n
-                                <b>Консолидация:</b> {annotation['consolidation'][0]:.2f}% | {annotation['consolidation'][1]:.2f}%\n
+                                anno = f'''
+                                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>Левое</b>&nbsp;|&nbsp;<b>Правое</b>\n
+                                <b>Матовое стекло:&nbsp;</b> {annotation['ground_glass'][0]:.2f}% | {annotation['ground_glass'][1]:.2f}%\n
+                                <b>Консолидация:&nbsp;&nbsp;&nbsp;</b> {annotation['consolidation'][0]:.2f}% | {annotation['consolidation'][1]:.2f}%\n
                                     '''
-                                col2.markdown(anno, unsafe_allow_html=True)
+                                st.markdown(anno, unsafe_allow_html=True)
 
                         mean_annotation += _mean_annotation
                         # Store statistics
+                        print(img_to_dicom.shape)
+                        print(np.unique(img_to_dicom))
+                        
                         ds = dcmread(path)
-                        ds.Rows = img_to_dicom.shape[0]
-                        ds.Columns = img_to_dicom.shape[1]
                         ds.PhotometricInterpretation = 'RGB'
                         ds.BitsStored = 8
                         ds.SamplesPerPixel = 3
                         ds.BitsAllocated = 8
                         ds.HighBit = ds.BitsStored - 1
-                        ds.PixelRepresentation = 0
                         ds.PixelData = img_to_dicom.tobytes()
                         ds.save_as(path)
+                        
+                        zip_obj.write(path)
 
                         stat = {'id': idx + 1}
                         if multi_class:
@@ -209,28 +218,33 @@ def main():
 
                     st.dataframe(df)
                     df.to_excel(os.path.join(user_dir, f'statistics_{name}.xlsx'))
-
+                    
+                    all_stats.append(f'statistics_{name}.xlsx')
+                    zip_obj.close()
+                    
                 # annotation_path = os.path.join(user_dir, 'annotation.txt')
                 # with open(annotation_path, mode='w') as f:
                 #         f.write(color_annotations)  
                 # zip_obj.write(annotation_path)
 
             # download segmentation zip
-            # zip_obj.close()
+            
 
             with st.expander("Скачать сегментации"):
-                with open(os.path.join(user_dir, 'segmentations.zip'), 'rb') as file:
-                    st.download_button(
-                        label="Архив сегментаций",
-                        data=file,
-                        file_name="segmentations.zip")
+                for zip_file in all_zip:
+                    with open(os.path.join(user_dir, zip_file), 'rb') as file:
+                        st.download_button(
+                            label=zip_file,
+                            data=file,
+                            file_name=zip_file)
 
-                with open(os.path.join(user_dir, 'statistics.xlsx'), 'rb') as file:
-                    st.download_button(
-                        label="Статистика",
-                        data=file,
-                        file_name="statistcs.xlsx"
-                    )
+                for stat_file in all_stats:
+                    with open(os.path.join(user_dir, stat_file), 'rb') as file:
+                        st.download_button(
+                            label=stat_file,
+                            data=file,
+                            file_name=stat_file
+                        )
 
 
 if __name__ == '__main__':
