@@ -5,15 +5,39 @@ from torch.utils.data import Dataset, DataLoader
 from pydicom import dcmread
 
 
-def window_image(image, window_center=-600, window_width=1500):
-    img_min = window_center - window_width // 2
-    img_max = window_center + window_width // 2
-    window_image = image
-    window_image[window_image < img_min] = img_min
-    window_image[window_image > img_max] = img_max
-    window_image += abs(np.min(window_image))
-    window_image = window_image / np.max(window_image)
-    return window_image
+def transform_to_hu(dicom, image):
+    intercept = dicom.RescaleIntercept
+    slope = dicom.RescaleSlope
+    hu_image = image * slope + intercept
+    return hu_image
+
+
+def window_image(dicom, image):
+    window_center = -600
+    window_width = 1500
+    if dicom is not None:
+        image = transform_to_hu(dicom, image)
+        try:
+            window_center = round(float(dicom.WindowCenter))
+        except AttributeError:
+            pass
+        try:
+            window_width = round(float(dicom.WindowWidth))
+        except AttributeError:
+            pass
+    windowed_image = (image - window_center + 0.5 * window_width) / window_width
+    windowed_image[windowed_image < 0] = 0
+    windowed_image[windowed_image > 1] = 1
+    # img_min = window_center - window_width // 2
+    # img_max = window_center + window_width // 2
+    # windowed_image = image.copy()
+    # windowed_image[windowed_image < img_min] = img_min
+    # windowed_image[windowed_image > img_max] = img_max
+    # minimum = np.min(windowed_image)
+    # if minimum < 0:
+    #     windowed_image += abs(minimum)
+    # windowed_image /= np.max(windowed_image)
+    return windowed_image
 
 
 def lung_segmentation(image, disease):
@@ -48,10 +72,14 @@ def lung_segmentation(image, disease):
     for x, col in enumerate(lungs):
         for y, pixel in enumerate(col):
             mean_w += x * pixel
-    mean_w = int(mean_w / np.sum(lungs))
-    coef_of_lung_sizes = np.sum(lung1) / np.sum(lung2)
     right = np.zeros_like(new_image)
     left = np.zeros_like(new_image)
+    try:
+        mean_w = int(mean_w / np.sum(lungs))
+    except ValueError:
+        print('Лёгкие не найдены')
+        return left, right
+    coef_of_lung_sizes = np.sum(lung1) / np.sum(lung2)
     right[:, mean_w] = lungs[:, mean_w]
     left[:, mean_w:] = lungs[:, mean_w:]
     if 0.2 < coef_of_lung_sizes < 5:
@@ -112,7 +140,6 @@ def make_masks(paths, models, transforms, multi_class=True):
                                                                get_predictions(paths, models, transforms, multi_class)):
         img_to_dicom = img_to_dicom.squeeze().cpu()
         img_to_dicom = np.array(img_to_dicom, dtype=np.float)
-        print(img.dtype, img.shape, img_to_dicom.dtype, img_to_dicom.shape)
         left_lung = lung[0]
         right_lung = lung[1]
         not_disease = (pred == 0)
@@ -162,19 +189,29 @@ class ProductionCovid19Dataset(Dataset):
 
     def __getitem__(self, index):
         path = self.paths[index]
-        dicom = dcmread(path)
-        original_image = dicom.pixel_array
-        try:
-            orientation = dicom.ImageOrientationPatient
-        except AttributeError:
-            orientation = None
-        print(orientation)
-        # image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        image = window_image(original_image)
+        dicom = None
+        if path.endswith('.png') or path.endswith('.jpeg') or path.endswith('.jpg'):
+            original_image = cv2.imread(path)
+            original_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2GRAY)
+        else:
+            print('Save to path:', path)
+            dicom = dcmread(path)
+            original_image = dicom.pixel_array
+            # print(dicom.file_meta)
+            from pprint import pprint
+            # pprint(dicom.__dict__)
+            # print(dicom.PhotometricInterpretation)
+            # print(original_image)
+            # print(dicom.)
+            try:
+                orientation = dicom.ImageOrientationPatient
+            except AttributeError:
+                orientation = None
+        original_image = window_image(dicom, original_image)
         if self.transform:
-            transformed = self.transform(image=image)
-            image = transformed['image']
-        image = torch.from_numpy(np.array([image], dtype=np.float))
+            transformed = self.transform(image=original_image)
+            original_image = transformed['image']
+        image = torch.from_numpy(np.array([original_image], dtype=np.float))
         image = image.type(torch.FloatTensor)
         original_image = torch.from_numpy(np.array([original_image], dtype=np.float))
         original_image = original_image.type(torch.FloatTensor)

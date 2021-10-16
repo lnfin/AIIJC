@@ -115,39 +115,26 @@ def data_to_paths(data, save_folder):
 
 def read_files(files):
     paths = []
+    # creating folder for user
+    folder_name = generate_folder_name()
+    path = 'images/' + folder_name
+    create_folder(path)
     for file in files:
-        # creating folder for user
-        folder_name = generate_folder_name()
-        path = 'images/' + folder_name
-        create_folder(path)
-
         # saving file from user
         file_path = os.path.join(path, file.name)
         open(file_path, 'wb').write(file.getvalue())
 
-        if file.name.endswith('.dcm'):
-            # Single dicom
-            paths.append([file_path])
-
-        elif file.name.endswith('.rar') or file.name.endswith('.zip'):
+        if file.name.endswith('.rar') or file.name.endswith('.zip'):
             Archive(file_path).extractall(path)
-
+            os.remove(file_path)
             images = []
             # create_folder(rar_path)
             for dcm in os.listdir(path):
-                if dcm.endswith('.dcm'):
-                    images.append(os.path.join(path, dcm))
-
+                images.append(os.path.join(path, dcm))
             paths.append(images)
-
         else:
-            # Заглузка для теста на пнг
-            with open(file_path, 'wb') as f:
-                f.write(file.getvalue())
-
-            paths[-1].append(file_path)
-            return paths, folder_name
-
+            # Single DICOM
+            paths.append([file_path])
     return paths, folder_name
 
 

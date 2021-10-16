@@ -16,8 +16,8 @@ def cached_get_setup():
 
 
 def main():
-    st.set_page_config(page_title='Covid Segmentation') # page_icon = favicon
-    
+    st.set_page_config(page_title='Covid Segmentation')  # page_icon = favicon
+
     st.markdown(
         f"""
     <style>
@@ -61,8 +61,6 @@ def main():
         info = st.info('Идет разархивация, пожалуйста, подождите')
         paths, folder_name = read_files(filenames)
         info.empty()
-
-        print(paths)
         if not paths or paths == [[]]:
             st.error('Неправильный формат или название файла')
         else:
@@ -118,11 +116,10 @@ def main():
 
                             # show segmentation
                             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-                            img = img / 255  # to [0;1] range
+                            img_to_display = img / 255  # to [0;1] range
                             # print(img.shape, img.dtype, img)
                             col2.header("Сегментация")
-                            col2.image(img, width=350)                            
-
+                            col2.image(img_to_display, width=350)
 
                             if multi_class:
                                 anno = f'''
@@ -134,19 +131,27 @@ def main():
 
                         mean_annotation += _mean_annotation
                         # Store statistics
-                        print(img_to_dicom.shape)
-                        print(np.unique(img_to_dicom))
-                        
-                        ds = dcmread(path)
-                        ds.PhotometricInterpretation = 'RGB'
-                        ds.BitsStored = 8
-                        ds.SamplesPerPixel = 3
-                        ds.BitsAllocated = 8
-                        ds.HighBit = ds.BitsStored - 1
-                        ds.PixelData = img_to_dicom.tobytes()
-                        ds.save_as(path)
-                        
-                        zip_obj.write(path)
+                        # print(img_to_dicom.shape)
+                        # print(np.unique(img_to_dicom))
+
+                        # if path.endswith('.dcm'):
+                        img_to_save = img.astype(np.uint8)
+                        if not path.endswith('.png') and not path.endswith('.jpg') and not path.endswith('.jpeg'):
+                            ds = dcmread(path)
+                            ds.PhotometricInterpretation = 'RGB'
+                            ds.SamplesPerPixel = 3
+                            ds.BitsAllocated = 8
+                            ds.BitsStored = 8
+                            ds.HighBit = 7
+                            ds.add_new(0x00280006, 'US', 0)
+                            ds.is_little_endian = True
+                            ds.fix_meta_info()
+                            # save pixel data and dicom file
+                            ds.PixelData = img_to_save.tobytes()
+                            path = path.replace('images', 'segmentations')
+                            ds.save_as(path)
+                            zip_obj.write(path)
+                        # print(img_to_save.dtype, np.unique(img_to_save))
 
                         stat = {'id': idx + 1}
                         if multi_class:
@@ -217,15 +222,14 @@ def main():
 
                     st.dataframe(df)
                     df.to_excel(os.path.join(user_dir, f'statistics_{name}.xlsx'))
-                    
+
                     all_stats.append(f'statistics_{name}.xlsx')
                     zip_obj.close()
-                    
+
                 # annotation_path = os.path.join(user_dir, 'annotation.txt')
                 # with open(annotation_path, mode='w') as f:
                 #         f.write(color_annotations)  
                 # zip_obj.write(annotation_path)
-            
 
             with st.expander("Скачать сегментации"):
                 for zip_file in all_zip:
