@@ -77,7 +77,6 @@ def lung_segmentation(image, disease):
     try:
         mean_w = int(mean_w / np.sum(lungs))
     except ValueError:
-        print('Лёгкие не найдены')
         return left, right
     coef_of_lung_sizes = np.sum(lung1) / np.sum(lung2)
     right[:, mean_w] = lungs[:, mean_w]
@@ -133,7 +132,10 @@ def make_masks(paths, models, transforms, multi_class=True):
     def combine_with_lung(disease, lung, lung_sum):
         disease = disease * lung
         disease_sum = np.sum(disease)
-        percents = disease_sum / lung_sum * 100
+        if lung_sum != 0:
+            percents = disease_sum / lung_sum * 100
+        else:
+            percents = 0
         return disease, percents, disease_sum
 
     for path, (img, orig_img, pred, lung, img_to_dicom) in zip(paths,
