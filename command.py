@@ -1,6 +1,7 @@
 import argparse
 import os
-import cv2
+import numpy as np
+from zipfile import ZipFile
 from production import data_to_paths, create_folder, get_setup
 from inference import make_masks
 
@@ -37,11 +38,7 @@ for x in ['segmentations', 'annotations']:
 # prediction
 for idx, data in enumerate(make_masks(paths, models, transforms, args.multi)):
     img, orig_img, img_to_dicom, annotation, path, _mean_annotation = data
-    # annotation saving
-    print(path)
-    name = path.split('\\')[-1].split('.')[0].split('/')[-1]
-
-    # image saving
-    path = os.path.join(save_folder, 'segmentations', name + '_mask.png')
-    cv2.imwrite(path, img)
-    print(path, annotation, '', sep='\n')
+    stats = []
+    mean_annotation = np.array([[0, 0, 0], [0, 0, 0]], dtype=np.float64)
+    zip_obj = ZipFile(user_dir + f'segmentations_{name}.zip', 'w')
+    all_zip.append(f'segmentations_{name}.zip')

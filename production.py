@@ -203,11 +203,10 @@ def save_dicom(path, img):
     ds.save_as(path)
 
 
-def read_files(files):
+def read_files(files, user_folder):
     paths = []
     # creating folder for user
-    folder_name = generate_folder_name()
-    path = 'images/' + folder_name
+    path = os.path.join('images', user_folder)
     create_folder(path)
     for file in files:
         # saving file from user
@@ -225,7 +224,7 @@ def read_files(files):
         else:
             # Single DICOM
             paths.append([file_path])
-    return paths, folder_name
+    return paths
 
 
 def create_folder(path):
