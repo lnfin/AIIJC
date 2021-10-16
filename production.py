@@ -17,7 +17,8 @@ import pandas as pd
 
 def create_dataframe(stats, mean_annotation):
     df = pd.json_normalize(stats)
-    if 'Ground glass' in stats[0]['both lungs'].keys():
+    print(stats)
+    if isinstance(stats[0]['both lungs'], dict):
         df.columns = [
             np.array(["ID", "left lung", "", "right lung", " ", "both", "  "]),
             np.array(
@@ -75,7 +76,7 @@ def get_statistic(idx, data):
     else:
         stat['left lung'] = data['disease'][0]
         stat['right lung'] = data['disease'][1]
-        stat['both lung'] = stat['left lung'] + stat['right lung']
+        stat['both lungs'] = stat['left lung'] + stat['right lung']
     return stat
 
 
