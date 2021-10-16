@@ -190,7 +190,6 @@ class ProductionCovid19Dataset(Dataset):
             original_image = cv2.imread(path)
             original_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2GRAY)
         else:
-            print('Save to path:', path)
             dicom = dcmread(path)
             original_image = dicom.pixel_array
             try:

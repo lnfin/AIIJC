@@ -107,6 +107,27 @@ def name_from_filepath(filepath):
     return ''.join(filepath.split('\\')[-1].split('.')[:-1])
 
 
+class NiftiSaver:
+    def __init__(self):
+        self.slices = []
+
+    def add(self, slice):
+        self.slices.append(slice)
+
+    def save(self, path):
+        slices = np.array(self.slices)
+        slices_better = []
+        for s in slices:
+            rgb = np.zeros((s.shape[0], s.shape[1], 1, 1), [('R', 'u1'), ('G', 'u1'), ('B', 'u1')])
+            for i in range(s.shape[0]):
+                for j in range(s.shape[1]):
+                    rgb[i, j] = tuple(s[i, j, :])
+            slices_better.append(rgb)
+        slices_better = np.array(slices_better)
+        ni_img = nib.Nifti1Image(slices_better, np.eye(4))
+        nib.save(ni_img, path)
+
+
 def save_dicom(path, img):
     ds = dcmread(path)
 
