@@ -4,10 +4,9 @@ import custom.models
 from zipfile import ZipFile
 import os
 import cv2
-from production import read_files, get_setup, create_folder
+from production import read_files, get_setup, create_folder, save_dicom, get_statistic, create_dataframe
 from inference import make_masks
 import pandas as pd
-from pydicom import dcmread
 
 
 @st.cache(show_spinner=False, allow_output_mutation=True)
@@ -127,7 +126,7 @@ def main():
                                 <b>Матовое стекло:&nbsp;</b> {annotation['ground_glass'][0]:.2f}% | {annotation['ground_glass'][1]:.2f}%\n
                                 <b>Консолидация:&nbsp;&nbsp;&nbsp;</b> {annotation['consolidation'][0]:.2f}% | {annotation['consolidation'][1]:.2f}%\n
                                     '''
-                                
+
                             else:
                                 anno = f'''
                                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>Левое</b>&nbsp;|&nbsp;<b>Правое</b>\n
@@ -135,111 +134,26 @@ def main():
 
                             col2.markdown(anno, unsafe_allow_html=True)
                         mean_annotation += _mean_annotation
-                        # Store statistics
-                        # print(img_to_dicom.shape)
-                        # print(np.unique(img_to_dicom))
-
-                        # if path.endswith('.dcm'):
                         img_to_save = img.astype(np.uint8)
-                        print(img_to_save.shape)
                         if not path.endswith('.png') and not path.endswith('.jpg') and not path.endswith('.jpeg'):
-                            ds = dcmread(path)
-
-                            ds.Rows = img_to_save.shape[1]
-                            ds.Columns = img_to_save.shape[0]
-                            ds.PhotometricInterpretation = "RGB"
-                            ds.SamplesPerPixel = 3
-                            ds.BitsStored = 8
-                            ds.BitsAllocated = 8
-                            ds.HighBit = 7
-                            ds.PixelRepresentation = 0
-                            # ds.PlanarConfiguration = 0
-                            # ds.is_little_endian = True
-                            # ds.fix_meta_info()
-                            ds.PixelData = img_to_save.tobytes()
-
-                            path = path.replace('images', 'segmentations')
-                            ds.save_as(path)
+                            save_dicom(path, img_to_save)
                             zip_obj.write(path)
-                        # print(img_to_save.dtype, np.unique(img_to_save))
 
-                        stat = {'id': idx + 1}
-                        if multi_class:
-                            stat['left lung'] = {
-                                'Ground glass': annotation['ground_glass'][0],
-                                'Consolidation': annotation['consolidation'][0]
-                            }
-                            stat['right lung'] = {
-                                'Ground glass': annotation['ground_glass'][1],
-                                'Consolidation': annotation['consolidation'][1]
-                            }
-                            stat['both lungs'] = {
-                                'Ground glass': sum(annotation['ground_glass']),
-                                'Consolidation': sum(annotation['consolidation'])
-                            }
-                        else:
-                            stat['left lung'] = annotation['disease'][0]
-                            stat['right lung'] = annotation['disease'][1]
-                            stat['both lung'] = stat['left lung'] + stat['right lung']
-
+                        stat = get_statistic(idx, annotation)
                         stats.append(stat)
 
                         info = st.info(f'Делаем предсказания , пожалуйста, подождите')
                     info.empty()
+
+                    # Creating dataframe to display and save
+                    df = create_dataframe(stats, mean_annotation)
                     # Display statistics
-                    df = pd.json_normalize(stats)
-                    if multi_class:
-                        df.columns = [
-                            np.array(["ID", "left lung", "", "right lung", " ", "both", "  "]),
-                            np.array(
-                                ["", "Ground glass", "Consolidation", "Ground glass", "Consolidation", "Ground glass",
-                                 "Consolidation"])
-                        ]
-                        df = df.append(pd.Series([
-                            -1,
-                            mean_annotation[0][2] / mean_annotation[0][0],
-                            mean_annotation[0][1] / mean_annotation[0][0],
-                            mean_annotation[1][2] / mean_annotation[1][0],
-                            mean_annotation[1][1] / mean_annotation[1][0],
-                            mean_annotation[0][2] / mean_annotation[0][0] + mean_annotation[1][2] / mean_annotation[1][
-                                0],
-                            mean_annotation[0][1] / mean_annotation[0][0] + mean_annotation[1][1] / mean_annotation[1][
-                                0]
-                        ], index=df.columns), ignore_index=True)
-
-                        df['ID'] = df['ID'].astype('int32').replace(-1, '3D').astype('str')
-
-                        df[["left lung", "", "right lung", " ", "both", "  "]] = df[
-                            ["left lung", "", "right lung", " ", "both", "  "]].round(1).applymap('{:.1f}'.format)
-
-                    else:
-                        df.columns = np.array(["ID", "left lung", "right lung", "both"])
-
-                        df['ID'] = df['ID'].astype('int32').replace(-1, '3D').astype('str')
-
-                        df = df.append(pd.Series([
-                            -1,
-                            mean_annotation[0][1] / mean_annotation[0][0],
-                            mean_annotation[1][1] / mean_annotation[1][0],
-                            mean_annotation[0][1] / mean_annotation[0][0] + mean_annotation[1][1] / mean_annotation[1][
-                                0]
-                        ], index=df.columns), ignore_index=True)
-
-                        df['ID'] = df['ID'].astype('int32').replace(-1, '3D').astype('str')
-
-                        df[["left lung", "right lung", "both"]] = df[["left lung", "right lung", "both"]].round(
-                            1).applymap('{:.1f}'.format)
-
                     st.dataframe(df)
+                    # Save statistics
                     df.to_excel(os.path.join(user_dir, f'statistics_{name}.xlsx'))
-
                     all_stats.append(f'statistics_{name}.xlsx')
+                    # Close zip
                     zip_obj.close()
-
-                # annotation_path = os.path.join(user_dir, 'annotation.txt')
-                # with open(annotation_path, mode='w') as f:
-                #         f.write(color_annotations)  
-                # zip_obj.write(annotation_path)
 
             with st.expander("Скачать сегментации"):
                 for zip_file in all_zip:

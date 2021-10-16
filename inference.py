@@ -28,15 +28,6 @@ def window_image(dicom, image):
     windowed_image = (image - window_center + 0.5 * window_width) / window_width
     windowed_image[windowed_image < 0] = 0
     windowed_image[windowed_image > 1] = 1
-    # img_min = window_center - window_width // 2
-    # img_max = window_center + window_width // 2
-    # windowed_image = image.copy()
-    # windowed_image[windowed_image < img_min] = img_min
-    # windowed_image[windowed_image > img_max] = img_max
-    # minimum = np.min(windowed_image)
-    # if minimum < 0:
-    #     windowed_image += abs(minimum)
-    # windowed_image /= np.max(windowed_image)
     return windowed_image
 
 
@@ -199,12 +190,6 @@ class ProductionCovid19Dataset(Dataset):
             print('Save to path:', path)
             dicom = dcmread(path)
             original_image = dicom.pixel_array
-            # print(dicom.file_meta)
-            from pprint import pprint
-            # pprint(dicom.__dict__)
-            # print(dicom.PhotometricInterpretation)
-            # print(original_image)
-            # print(dicom.)
             try:
                 orientation = dicom.ImageOrientationPatient
             except AttributeError:

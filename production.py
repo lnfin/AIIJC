@@ -12,6 +12,76 @@ from config import BinaryModelConfig, MultiModelConfig
 from PIL import Image, ImageFont, ImageDraw
 from pyunpack import Archive
 from inference import window_image
+from pydicom import dcmread
+import pandas as pd
+
+
+def create_dataframe(stats, mean_annotation):
+    df = pd.json_normalize(stats)
+    if 'ground_glass' in stats[0].keys():
+        df.columns = [
+            np.array(["ID", "left lung", "", "right lung", " ", "both", "  "]),
+            np.array(
+                ["", "Ground glass", "Consolidation", "Ground glass", "Consolidation", "Ground glass",
+                 "Consolidation"])
+        ]
+        df = df.append(pd.Series([
+            -1,
+            mean_annotation[0][2] / mean_annotation[0][0],
+            mean_annotation[0][1] / mean_annotation[0][0],
+            mean_annotation[1][2] / mean_annotation[1][0],
+            mean_annotation[1][1] / mean_annotation[1][0],
+            mean_annotation[0][2] / mean_annotation[0][0] + mean_annotation[1][2] / mean_annotation[1][
+                0],
+            mean_annotation[0][1] / mean_annotation[0][0] + mean_annotation[1][1] / mean_annotation[1][
+                0]
+        ], index=df.columns), ignore_index=True)
+
+        df['ID'] = df['ID'].astype('int32').replace(-1, '3D').astype('str')
+
+        df[["left lung", "", "right lung", " ", "both", "  "]] = df[
+            ["left lung", "", "right lung", " ", "both", "  "]].round(1).applymap('{:.1f}'.format)
+
+    else:
+        df.columns = np.array(["ID", "left lung", "right lung", "both"])
+
+        df['ID'] = df['ID'].astype('int32').replace(-1, '3D').astype('str')
+
+        df = df.append(pd.Series([
+            -1,
+            mean_annotation[0][1] / mean_annotation[0][0],
+            mean_annotation[1][1] / mean_annotation[1][0],
+            mean_annotation[0][1] / mean_annotation[0][0] + mean_annotation[1][1] / mean_annotation[1][
+                0]
+        ], index=df.columns), ignore_index=True)
+
+        df['ID'] = df['ID'].astype('int32').replace(-1, '3D').astype('str')
+
+        df[["left lung", "right lung", "both"]] = df[["left lung", "right lung", "both"]].round(
+            1).applymap('{:.1f}'.format)
+    return df
+
+
+def get_statistic(idx, annotation):
+    stat = {'id': idx + 1}
+    if 'ground_glass' in annotation.keys():
+        stat['left lung'] = {
+            'Ground glass': annotation['ground_glass'][0],
+            'Consolidation': annotation['consolidation'][0]
+        }
+        stat['right lung'] = {
+            'Ground glass': annotation['ground_glass'][1],
+            'Consolidation': annotation['consolidation'][1]
+        }
+        stat['both lungs'] = {
+            'Ground glass': sum(annotation['ground_glass']),
+            'Consolidation': sum(annotation['consolidation'])
+        }
+    else:
+        stat['left lung'] = annotation['disease'][0]
+        stat['right lung'] = annotation['disease'][1]
+        stat['both lung'] = stat['left lung'] + stat['right lung']
+    return stat
 
 
 def get_setup():
@@ -111,6 +181,26 @@ def data_to_paths(data, save_folder):
         else:
             print(f'Path \"{path}\" is not supported format')
     return all_paths
+
+
+def save_dicom(path, img):
+    ds = dcmread(path)
+
+    ds.Rows = img.shape[1]
+    ds.Columns = img.shape[0]
+    ds.PhotometricInterpretation = "RGB"
+    ds.SamplesPerPixel = 3
+    ds.BitsStored = 8
+    ds.BitsAllocated = 8
+    ds.HighBit = 7
+    ds.PixelRepresentation = 0
+    # ds.PlanarConfiguration = 0
+    # ds.is_little_endian = True
+    # ds.fix_meta_info()
+    ds.PixelData = img.tobytes()
+
+    path = path.replace('images', 'segmentations')
+    ds.save_as(path)
 
 
 def read_files(files):
