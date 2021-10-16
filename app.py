@@ -84,12 +84,12 @@ def main():
 
             all_zip = []
             all_stats = []
-            for _paths in paths:
+            for idx, _paths in enumerate(paths):
                 stats = []
                 mean_annotation = np.array([[0, 0, 0], [0, 0, 0]], dtype=np.float64)
 
                 # Loading menu
-                name = _paths[0].split('/')[-1].split('.')[0].replace('\\', '/')
+                name = filenames[idx].name.split('/')[-1].split('.')[0].replace('\\', '/')
 
                 zip_obj = ZipFile(user_dir + f'segmentations_{name}.zip', 'w')
                 all_zip.append(f'segmentations_{name}.zip')
