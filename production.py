@@ -31,11 +31,9 @@ def create_dataframe(stats, mean_annotation):
             mean_annotation[0][1] / mean_annotation[0][0],
             mean_annotation[1][2] / mean_annotation[1][0],
             mean_annotation[1][1] / mean_annotation[1][0],
-            mean_annotation[0][2] / mean_annotation[0][0] + mean_annotation[1][2] / mean_annotation[1][
-                0],
-            mean_annotation[0][1] / mean_annotation[0][0] + mean_annotation[1][1] / mean_annotation[1][
-                0]
-        ], index=df.columns), ignore_index=True)
+            mean_annotation[0][2] / mean_annotation[0][0] + mean_annotation[1][2] / mean_annotation[1][0],
+            mean_annotation[0][1] / mean_annotation[0][0] + mean_annotation[1][1] / mean_annotation[1][0]],
+            index=df.columns), ignore_index=True)
 
         df['ID'] = df['ID'].astype('int32').replace(-1, '3D').astype('str')
 
@@ -51,9 +49,9 @@ def create_dataframe(stats, mean_annotation):
             -1,
             mean_annotation[0][1] / mean_annotation[0][0],
             mean_annotation[1][1] / mean_annotation[1][0],
-            mean_annotation[0][1] / mean_annotation[0][0] + mean_annotation[1][1] / mean_annotation[1][
-                0]
-        ], index=df.columns), ignore_index=True)
+            mean_annotation[0][1] / mean_annotation[0][0] + mean_annotation[1][1] /
+            mean_annotation[1][0]],
+            index=df.columns), ignore_index=True)
 
         df['ID'] = df['ID'].astype('int32').replace(-1, '3D').astype('str')
 
@@ -106,6 +104,55 @@ def get_setup():
 
 def generate_folder_name():
     return ''.join(random.choice(string.ascii_lowercase) for _ in range(7)) + '/'
+
+
+def save_dicom(path, img):
+    ds = dcmread(path)
+
+    ds.Rows = img.shape[1]
+    ds.Columns = img.shape[0]
+    ds.PhotometricInterpretation = "RGB"
+    ds.SamplesPerPixel = 3
+    ds.BitsStored = 8
+    ds.BitsAllocated = 8
+    ds.HighBit = 7
+    ds.PixelRepresentation = 0
+    # ds.PlanarConfiguration = 0
+    # ds.is_little_endian = True
+    # ds.fix_meta_info()
+    ds.PixelData = img.tobytes()
+
+    path = path.replace('images', 'segmentations')
+    ds.save_as(path)
+
+
+def read_files(files, user_folder):
+    paths = []
+    # creating folder for user
+    path = os.path.join('images', user_folder)
+    create_folder(path)
+    for file in files:
+        # saving file from user
+        file_path = os.path.join(path, file.name)
+        open(file_path, 'wb').write(file.getvalue())
+
+        if file.name.endswith('.rar') or file.name.endswith('.zip'):
+            Archive(file_path).extractall(path)
+            os.remove(file_path)
+            images = []
+            # create_folder(rar_path)
+            for dcm in os.listdir(path):
+                images.append(os.path.join(path, dcm))
+            paths.append(images)
+        else:
+            # Single DICOM
+            paths.append([file_path])
+    return paths
+
+
+def create_folder(path):
+    if not os.path.exists(path):
+        os.mkdir(path)
 
 
 def make_legend(image, annotation):
@@ -181,52 +228,3 @@ def data_to_paths(data, save_folder):
         else:
             print(f'Path \"{path}\" is not supported format')
     return all_paths
-
-
-def save_dicom(path, img):
-    ds = dcmread(path)
-
-    ds.Rows = img.shape[1]
-    ds.Columns = img.shape[0]
-    ds.PhotometricInterpretation = "RGB"
-    ds.SamplesPerPixel = 3
-    ds.BitsStored = 8
-    ds.BitsAllocated = 8
-    ds.HighBit = 7
-    ds.PixelRepresentation = 0
-    # ds.PlanarConfiguration = 0
-    # ds.is_little_endian = True
-    # ds.fix_meta_info()
-    ds.PixelData = img.tobytes()
-
-    path = path.replace('images', 'segmentations')
-    ds.save_as(path)
-
-
-def read_files(files, user_folder):
-    paths = []
-    # creating folder for user
-    path = os.path.join('images', user_folder)
-    create_folder(path)
-    for file in files:
-        # saving file from user
-        file_path = os.path.join(path, file.name)
-        open(file_path, 'wb').write(file.getvalue())
-
-        if file.name.endswith('.rar') or file.name.endswith('.zip'):
-            Archive(file_path).extractall(path)
-            os.remove(file_path)
-            images = []
-            # create_folder(rar_path)
-            for dcm in os.listdir(path):
-                images.append(os.path.join(path, dcm))
-            paths.append(images)
-        else:
-            # Single DICOM
-            paths.append([file_path])
-    return paths
-
-
-def create_folder(path):
-    if not os.path.exists(path):
-        os.mkdir(path)

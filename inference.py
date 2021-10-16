@@ -106,8 +106,7 @@ def get_predictions(paths, models, transforms, multi_class=True):
                 multi_output = multi_model(orig_img)
                 multi_pred = multi_output.squeeze().cpu()
                 multi_pred = torch.argmax(multi_pred, 0).float()
-                multi_pred = (multi_pred % 3)  # model on trained on 3 classes but using only 2
-                pred = pred + pred * (multi_pred == 2)  # ground-glass from binary model and consolidation from second
+                pred = pred + pred * multi_pred  # ground-glass from binary model and consolidation from second
             orig_img = orig_img.squeeze()
             yield img.numpy(), orig_img.numpy(), pred.numpy(), lung, img_to_dicom
 
