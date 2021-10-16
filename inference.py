@@ -13,18 +13,19 @@ def transform_to_hu(dicom, image):
 
 
 def window_image(dicom, image):
+    if dicom is None:
+        return image
     window_center = -600
     window_width = 1500
-    if dicom is not None:
-        image = transform_to_hu(dicom, image)
-        try:
-            window_center = round(float(dicom.WindowCenter))
-        except AttributeError:
-            pass
-        try:
-            window_width = round(float(dicom.WindowWidth))
-        except AttributeError:
-            pass
+    image = transform_to_hu(dicom, image)
+    try:
+        window_center = round(float(dicom.WindowCenter))
+    except AttributeError:
+        pass
+    try:
+        window_width = round(float(dicom.WindowWidth))
+    except AttributeError:
+        pass
     windowed_image = (image - window_center + 0.5 * window_width) / window_width
     windowed_image[windowed_image < 0] = 0
     windowed_image[windowed_image > 1] = 1
@@ -42,9 +43,7 @@ def lung_segmentation(image, disease):
     new_image = image
     upper = (255,)
     thresh = cv2.inRange(new_image, lower, upper)
-    cv2.imwrite('Binary.png', thresh)
     thresh = 1 * ((thresh - disease) == 255).astype(np.uint8)
-    cv2.imwrite('BinaryMinus.png', thresh)
     contours_info = []
     contours = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
     contours = contours[0] if len(contours) == 2 else contours[1]
@@ -61,10 +60,7 @@ def lung_segmentation(image, disease):
         cv2.drawContours(lung1, [contours[index_second]], 0, (255), -1)
         index_first = contours_info[2][0]
         cv2.drawContours(lung2, [contours[index_first]], 0, (255), -1)
-    cv2.imwrite('lung1.png', lung1)
-    cv2.imwrite('lung2.png', lung2)
     lungs = lung1 + lung2
-    cv2.imwrite('lungs.png', lungs)
     for x, col in enumerate(lungs):
         for y, pixel in enumerate(col):
             middle_x += x * pixel
@@ -74,8 +70,6 @@ def lung_segmentation(image, disease):
     coef_of_lung_sizes = np.sum(lung1) / np.sum(lung2)
     right[:, :middle_x] = lungs[:, :middle_x]
     left[:, middle_x:] = lungs[:, middle_x:]
-    cv2.imwrite('left.png', left)
-    cv2.imwrite('right.png', right)
     if 0.2 < coef_of_lung_sizes < 5:
         if np.sum(right * lung1) / np.sum(right) > np.sum(right * lung2) / np.sum(right):
             right = lung1
