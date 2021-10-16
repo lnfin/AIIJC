@@ -54,17 +54,19 @@ def main():
                 stats = []
                 mean_data = np.array([[0, 0, 0], [0, 0, 0]], dtype=np.float64)
 
+                step = 0.25 * len(_paths)
                 # Loading menu
                 name = name_from_filepath(filepaths[idx].name)
 
-                zip_obj = ZipFile(os.path.join(user_dir, f'segmentations_{name}.zip'), 'w')
-                all_zip.append(f'segmentations_{name}.zip')
+                zip_obj = ZipFile(os.path.join(user_dir, f'{name}.zip'), 'w')
+                all_zip.append(f'{name}.zip')
                 # Display file/patient name
                 with st.expander(f"Информация о {name}"):
                     # Legend for segmentation
                     st.markdown(stw.legend_multi if multi_class else stw.legend_binary, unsafe_allow_html=True)
 
                     info = st.info(f'Делаем предсказания , пожалуйста, подождите')
+                    kol = 0
                     for idx, data in enumerate(make_masks(_paths, models, transforms, multi_class)):
                         img, orig_img, img_to_dicom, annotation, path, _mean_data = data
                         info.empty()
@@ -80,25 +82,23 @@ def main():
                         stats.append(stat)
 
                         # Only half of slices
-                        if idx % 2 == 1:
-                            info = st.info(f'Делаем предсказания , пожалуйста, подождите')
-                            continue
-                        st.subheader('Срез №' + str(idx + 1))
+                        if round(kol * step) == idx or int(kol * step) + 1 == idx:
+                            st.subheader('Срез №' + str(idx + 1))
 
-                        # Original image display
-                        col1, col2 = st.columns(2)
-                        col1.header("Оригинал")
-                        col1.image(orig_img, width=350)
+                            # Original image display
+                            col1, col2 = st.columns(2)
+                            col1.header("Оригинал")
+                            col1.image(orig_img, width=350)
 
-                        # Segmentation image display
-                        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-                        img_to_display = img / 255  # to [0;1] range
-                        col2.header("Сегментация")
-                        col2.image(img_to_display, width=350)
+                            # Segmentation image display
+                            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                            img_to_display = img / 255  # to [0;1] range
+                            col2.header("Сегментация")
+                            col2.image(img_to_display, width=350)
 
-                        # Annotation display
-                        pretty_annotation = stw.pretty_annotation(annotation)
-                        col2.markdown(pretty_annotation, unsafe_allow_html=True)
+                            # Annotation display
+                            pretty_annotation = stw.pretty_annotation(annotation)
+                            col2.markdown(pretty_annotation, unsafe_allow_html=True)
 
                         info = st.info(f'Делаем предсказания , пожалуйста, подождите')
                     info.empty()
@@ -107,8 +107,8 @@ def main():
                     # Display statistics
                     st.dataframe(df)
                     # Save statistics
-                    df.to_excel(os.path.join(user_dir, f'statistics_{name}.xlsx'))
-                    all_stats.append(f'statistics_{name}.xlsx')
+                    df.to_excel(os.path.join(user_dir, f'{name}.xlsx'))
+                    all_stats.append(f'{name}.xlsx')
                     # Close zip
                     zip_obj.close()
 
