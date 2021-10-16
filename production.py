@@ -1,6 +1,5 @@
 from utils import get_model
 from data_functions import get_transforms
-from torch.utils.data import Dataset, DataLoader
 import cv2
 import torch
 import numpy as np
@@ -18,7 +17,7 @@ import pandas as pd
 
 def create_dataframe(stats, mean_annotation):
     df = pd.json_normalize(stats)
-    if 'ground_glass' in stats[0].keys():
+    if 'Ground glass' in stats[0]['both lungs'].keys():
         df.columns = [
             np.array(["ID", "left lung", "", "right lung", " ", "both", "  "]),
             np.array(
@@ -43,8 +42,6 @@ def create_dataframe(stats, mean_annotation):
     else:
         df.columns = np.array(["ID", "left lung", "right lung", "both"])
 
-        df['ID'] = df['ID'].astype('int32').replace(-1, '3D').astype('str')
-
         df = df.append(pd.Series([
             -1,
             mean_annotation[0][1] / mean_annotation[0][0],
@@ -60,24 +57,24 @@ def create_dataframe(stats, mean_annotation):
     return df
 
 
-def get_statistic(idx, annotation):
+def get_statistic(idx, data):
     stat = {'id': idx + 1}
-    if 'ground_glass' in annotation.keys():
+    if 'ground_glass' in data.keys():
         stat['left lung'] = {
-            'Ground glass': annotation['ground_glass'][0],
-            'Consolidation': annotation['consolidation'][0]
+            'Ground glass': data['ground_glass'][0],
+            'Consolidation': data['consolidation'][0]
         }
         stat['right lung'] = {
-            'Ground glass': annotation['ground_glass'][1],
-            'Consolidation': annotation['consolidation'][1]
+            'Ground glass': data['ground_glass'][1],
+            'Consolidation': data['consolidation'][1]
         }
         stat['both lungs'] = {
-            'Ground glass': sum(annotation['ground_glass']),
-            'Consolidation': sum(annotation['consolidation'])
+            'Ground glass': sum(data['ground_glass']),
+            'Consolidation': sum(data['consolidation'])
         }
     else:
-        stat['left lung'] = annotation['disease'][0]
-        stat['right lung'] = annotation['disease'][1]
+        stat['left lung'] = data['disease'][0]
+        stat['right lung'] = data['disease'][1]
         stat['both lung'] = stat['left lung'] + stat['right lung']
     return stat
 
@@ -103,7 +100,11 @@ def get_setup():
 
 
 def generate_folder_name():
-    return ''.join(random.choice(string.ascii_lowercase) for _ in range(7)) + '/'
+    return ''.join(random.choice(string.ascii_lowercase) for _ in range(7))
+
+
+def name_from_filepath(filepath):
+    return ''.join(filepath.split('\\')[-1].split('.')[:-1])
 
 
 def save_dicom(path, img):
@@ -126,7 +127,7 @@ def save_dicom(path, img):
     ds.save_as(path)
 
 
-def read_files(files, user_folder):
+def read_web_files(files, user_folder):
     paths = []
     # creating folder for user
     path = os.path.join('images', user_folder)
@@ -147,6 +148,23 @@ def read_files(files, user_folder):
         else:
             # Single DICOM
             paths.append([file_path])
+    return paths
+
+
+def read_files(original_paths, folder):
+    # creating folder for user
+    paths = []
+    for original_path in original_paths:
+        # saving file from user
+        if original_path.endswith('.rar') or original_path.endswith('.zip'):
+            Archive(original_path).extractall(folder)
+            image_paths = []
+            for img in os.listdir(folder):
+                image_paths.append(os.path.join(folder, img))
+            paths.append(image_paths)
+        else:
+            # Single DICOM
+            paths.append([original_path])
     return paths
 
 

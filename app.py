@@ -27,16 +27,16 @@ def main():
     st.title('Сегментация поражения легких коронавирусной пневмонией')
 
     st.subheader("Загрузка файлов")
-    filenames = st.file_uploader('Выберите или ператащите сюда снимки', type=['.png', '.dcm', '.rar', '.zip'],
+    filepaths = st.file_uploader('Выберите или ператащите сюда снимки', type=['.png', '.dcm', '.rar', '.zip'],
                                  accept_multiple_files=True)
 
     multi_class = st.checkbox(label='Мульти-классовая сегментация', value=False)
 
-    if st.button('Загрузить') and filenames:
+    if st.button('Загрузить') and filepaths:
         # Reading files
         info = st.info('Идет разархивация, пожалуйста, подождите')
         user_folder = generate_folder_name()
-        paths = read_files(filenames, user_folder)
+        paths = read_web_files(filepaths, user_folder)
         info.empty()
         if not any(paths):
             st.error('Неправильный формат или название файла')
@@ -55,7 +55,7 @@ def main():
                 mean_data = np.array([[0, 0, 0], [0, 0, 0]], dtype=np.float64)
 
                 # Loading menu
-                name = filenames[idx].name.split('/')[-1].split('.')[0].replace('\\', '/')
+                name = name_from_filepath(filepaths[idx].name)
 
                 zip_obj = ZipFile(os.path.join(user_dir, f'segmentations_{name}.zip'), 'w')
                 all_zip.append(f'segmentations_{name}.zip')

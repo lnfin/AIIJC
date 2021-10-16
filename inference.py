@@ -35,14 +35,16 @@ def lung_segmentation(image, disease):
     image = image.copy() * 255
     disease = np.array(disease.copy() * 255, dtype=np.int)
     h, w = image.shape
-    mean_w = 0
+    middle_x = 0
     pixels = np.sum(image)
     lower = round(pixels / (w * h) * 1.7)
     lower = (min(lower, 180),)
     new_image = image
     upper = (255,)
     thresh = cv2.inRange(new_image, lower, upper)
+    cv2.imwrite('Binary.png', thresh)
     thresh = 1 * ((thresh - disease) == 255).astype(np.uint8)
+    cv2.imwrite('BinaryMinus.png', thresh)
     contours_info = []
     contours = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
     contours = contours[0] if len(contours) == 2 else contours[1]
@@ -59,19 +61,21 @@ def lung_segmentation(image, disease):
         cv2.drawContours(lung1, [contours[index_second]], 0, (255), -1)
         index_first = contours_info[2][0]
         cv2.drawContours(lung2, [contours[index_first]], 0, (255), -1)
+    cv2.imwrite('lung1.png', lung1)
+    cv2.imwrite('lung2.png', lung2)
     lungs = lung1 + lung2
+    cv2.imwrite('lungs.png', lungs)
     for x, col in enumerate(lungs):
         for y, pixel in enumerate(col):
-            mean_w += x * pixel
+            middle_x += x * pixel
     right = np.zeros_like(new_image)
     left = np.zeros_like(new_image)
-    try:
-        mean_w = int(mean_w / np.sum(lungs))
-    except ValueError:
-        return left, right
+    middle_x = image.shape[0] // 2
     coef_of_lung_sizes = np.sum(lung1) / np.sum(lung2)
-    right[:, mean_w] = lungs[:, mean_w]
-    left[:, mean_w:] = lungs[:, mean_w:]
+    right[:, :middle_x] = lungs[:, :middle_x]
+    left[:, middle_x:] = lungs[:, middle_x:]
+    cv2.imwrite('left.png', left)
+    cv2.imwrite('right.png', right)
     if 0.2 < coef_of_lung_sizes < 5:
         if np.sum(right * lung1) / np.sum(right) > np.sum(right * lung2) / np.sum(right):
             right = lung1
