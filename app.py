@@ -136,18 +136,23 @@ def main():
 
                         # if path.endswith('.dcm'):
                         img_to_save = img.astype(np.uint8)
+                        print(img_to_save.shape)
                         if not path.endswith('.png') and not path.endswith('.jpg') and not path.endswith('.jpeg'):
                             ds = dcmread(path)
-                            ds.PhotometricInterpretation = 'RGB'
+
+                            ds.Rows = img_to_save.shape[1]
+                            ds.Columns = img_to_save.shape[0]
+                            ds.PhotometricInterpretation = "RGB"
                             ds.SamplesPerPixel = 3
-                            ds.BitsAllocated = 8
                             ds.BitsStored = 8
+                            ds.BitsAllocated = 8
                             ds.HighBit = 7
-                            ds.add_new(0x00280006, 'US', 0)
-                            ds.is_little_endian = True
-                            ds.fix_meta_info()
-                            # save pixel data and dicom file
+                            ds.PixelRepresentation = 0
+                            # ds.PlanarConfiguration = 0
+                            # ds.is_little_endian = True
+                            # ds.fix_meta_info()
                             ds.PixelData = img_to_save.tobytes()
+
                             path = path.replace('images', 'segmentations')
                             ds.save_as(path)
                             zip_obj.write(path)

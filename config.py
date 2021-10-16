@@ -17,10 +17,9 @@ class BinaryModelConfig:
     output_channels = 2
 
     model = 'UnetPlusPlus'
-    backbone = 'resnext101_32x4d'
-    encoder_weights = 'swsl'
-    best_dict = 'checkpoints/Binary.pth'
-    link = 'https://drive.google.com/uc?id=1uUb8rw8JM6sG9xtaahBrr4SCBcWB70qr'
+    backbone = 'efficientnet-b7'
+    best_dict = 'checkpoints/EfficientNet.pth'
+    # link = 'https://drive.google.com/uc?id=1uUb8rw8JM6sG9xtaahBrr4SCBcWB70qr'
 
 
 class MultiModelConfig:
