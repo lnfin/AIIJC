@@ -17,7 +17,7 @@ import pandas as pd
 
 def create_dataframe(stats, mean_annotation):
     df = pd.json_normalize(stats)
-    if 'Ground glass' in stats[0]['left lung'].keys():
+    if isinstance(stats[0]['left lung'], dict):
         df.columns = [
             np.array(["ID", "left lung", "", "right lung", " ", "both", "  "]),
             np.array(

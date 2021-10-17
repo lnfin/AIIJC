@@ -108,6 +108,7 @@ def get_predictions(paths, models, transforms, multi_class=True):
                 multi_pred = torch.argmax(multi_pred, 0).float()
                 pred = pred + pred * multi_pred  # ground-glass from binary model and consolidation from second
             orig_img = orig_img.squeeze()
+            pred = pred * ((lung[0] + lung[1]) == 255)
             yield img.cpu().numpy(), orig_img.cpu().numpy(), pred.cpu().numpy(), lung, img_to_dicom
 
 

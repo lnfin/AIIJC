@@ -17,8 +17,10 @@ class BinaryModelConfig:
     output_channels = 2
 
     model = 'UnetPlusPlus'
-    backbone = 'efficientnet-b7'
-    best_dict = 'checkpoints/EfficientNet.pth'
+    # backbone = 'efficientnet-b7'
+    # best_dict = 'checkpoints/EfficientNet.pth'
+    backbone = 'mobilenet_v2'
+    best_dict = 'checkpoints/mobilenetv2.pth'
     # link = 'https://drive.google.com/uc?id=1uUb8rw8JM6sG9xtaahBrr4SCBcWB70qr'
 
 
