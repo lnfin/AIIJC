@@ -166,9 +166,10 @@ def make_masks(paths, models, transforms, multi_class=True):
             img_to_dicom = np.array([np.zeros_like(img_to_dicom), disease, disease]) + img_to_dicom * not_disease
             left_data = (left_lung_sum, disease_left_sum, 0)
             right_data = (right_lung_sum, disease_right_sum, 0)
+            
         img = pre_transforms_of_image(img)
         img_to_dicom = pre_transforms_of_image(img_to_dicom)
-        yield img, orig_img, img_to_dicom, annotation, path, np.array((left_data, right_data))
+        yield img, orig_img, img_to_dicom, annotation, path, np.array((left_data, right_data)), pred
 
 
 class ProductionCovid19Dataset(Dataset):

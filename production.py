@@ -118,7 +118,7 @@ class NiftiSaver:
     def save(self, path):
         slices = np.array(self.slices)
 
-        ni_img = nib.Nifti1Image(slices, np.eye(4) * 2)
+        ni_img = nib.Nifti1Image(slices, np.eye(4))
         nib.save(ni_img, path)
 
 

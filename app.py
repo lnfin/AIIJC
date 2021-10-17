@@ -59,8 +59,12 @@ def main():
                 # Loading menu
                 name = name_from_filepath(filepaths[idx].name)
 
-                nifti = NiftiSaver()
-
+                if multi_class:
+                    nifti_gg = NiftiSaver()
+                    nifti_cs = NiftiSaver()
+                else:
+                    nifti = NiftiSaver()
+                    
                 zip_obj = ZipFile(os.path.join(user_dir, f'{name}.zip'), 'w')
                 all_zip.append(f'{name}.zip')
                 # Display file/patient name
@@ -71,16 +75,18 @@ def main():
                     info = st.info(f'Делаем предсказания , пожалуйста, подождите')
                     kol = 0
                     for idx, data in enumerate(make_masks(_paths, models, transforms, multi_class)):
-                        img, orig_img, img_to_dicom, annotation, path, _mean_data = data
+                        img, orig_img, img_to_dicom, annotation, path, _mean_data, mask = data
                         info.empty()
-
-                        nifti.add(img_to_dicom)
+                        
+                        print(mask.shape)
+                        if multi_class:
+                            nifti_gg.add((mask == 1) * 1)
+                            nifti_cs.add((mask == 2) * 1)
+                        else:
+                            nifti.add(mask)
 
                         mean_data += _mean_data
                         img_to_save = img.astype(np.uint8)
-                        if not path.endswith('.png') and not path.endswith('.jpg') and not path.endswith('.jpeg'):
-                            save_dicom(path, img_to_save)
-                            zip_obj.write(path)
 
                         # annotation to statistic
                         stat = get_statistic(idx, annotation)
@@ -118,7 +124,14 @@ def main():
                     df.to_excel(os.path.join(user_dir, f'{name}.xlsx'))
                     all_stats.append(f'{name}.xlsx')
                     print('PATH ', user_dir)
-                    nifti.add(os.path.join(user_dir, f'{name}.nii'))
+                    if multi_class:
+                        nifti_gg.save(os.path.join(user_dir, f'{name}_ground_glass.nii'))
+                        nifti_cs.save(os.path.join(user_dir, f'{name}_consolidation.nii'))     
+                        zip_obj.write(os.path.join(user_dir, f'{name}_ground_glass.nii'))
+                        zip_obj.write(os.path.join(user_dir, f'{name}_consolidation.nii'))                                    
+                    else:
+                        nifti.save(os.path.join(user_dir, f'{name}.nii'))
+                        zip_obj.write(os.path.join(user_dir, f'{name}.nii'))
                     # Close zip
                     zip_obj.close()
 
