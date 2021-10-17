@@ -27,12 +27,12 @@ def create_dataframe(stats, mean_annotation):
         ]
         df = df.append(pd.Series([
             -1,
-            mean_annotation[0][2] / mean_annotation[0][0],
-            mean_annotation[0][1] / mean_annotation[0][0],
-            mean_annotation[1][2] / mean_annotation[1][0],
-            mean_annotation[1][1] / mean_annotation[1][0],
-            mean_annotation[0][2] / mean_annotation[0][0] + mean_annotation[1][2] / mean_annotation[1][0],
-            mean_annotation[0][1] / mean_annotation[0][0] + mean_annotation[1][1] / mean_annotation[1][0]],
+            mean_annotation[0][2] / mean_annotation[0][0] * 100,
+            mean_annotation[0][1] / mean_annotation[0][0] * 100,
+            mean_annotation[1][2] / mean_annotation[1][0] * 100,
+            mean_annotation[1][1] / mean_annotation[1][0] * 100,
+            (mean_annotation[0][2] / mean_annotation[0][0] + mean_annotation[1][2] / mean_annotation[1][0]) * 100,
+            (mean_annotation[0][1] / mean_annotation[0][0] + mean_annotation[1][1] / mean_annotation[1][0]) * 100],
             index=df.columns), ignore_index=True)
 
         df['ID'] = df['ID'].astype('int32').replace(-1, '3D').astype('str')
@@ -45,16 +45,18 @@ def create_dataframe(stats, mean_annotation):
 
         df = df.append(pd.Series([
             -1,
-            mean_annotation[0][1] / mean_annotation[0][0],
-            mean_annotation[1][1] / mean_annotation[1][0],
-            mean_annotation[0][1] / mean_annotation[0][0] + mean_annotation[1][1] /
-            mean_annotation[1][0]],
+            mean_annotation[0][1] / mean_annotation[0][0] * 100,
+            mean_annotation[1][1] / mean_annotation[1][0] * 100,
+            (mean_annotation[0][1] / mean_annotation[0][0] + mean_annotation[1][1] /
+            mean_annotation[1][0]) * 100],
             index=df.columns), ignore_index=True)
 
         df['ID'] = df['ID'].astype('int32').replace(-1, '3D').astype('str')
 
         df[["Левое легкое", "Правое легкое", "Оба"]] = df[["Левое легкое", "Правое легкое", "Оба"]].round(
             1).applymap('{:.1f}'.format)
+        
+        
     return df
 
 
