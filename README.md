@@ -6,11 +6,22 @@
 * [MedSeg: COVID-19 CT segmentation dataset](http://medicalsegmentation.com/covid19/)
 * [Zenodo: COVID-19 CT Lung and Infection Segmentation Dataset](https://zenodo.org/record/3757476#.YRqU0IgzbP_)
 
-## Запуск кода 
+## Запуск предсказания
+
+Установка зависимостей: `pip3 install -r requirements.txt`
+
+Для удобного предсказания для жюри мы сделали **command.py**:
+
+Аргументы:
+- **--data**: папка или архив rar/zip с dicom файлами
+- **--save_folder**: папка куда сохранить предсказанные сегментации
+- **--multi**: указывать этот флаг, если нужно предсказание разных видов повреждения
+
+## Запуска сайта
+
+Установка зависимостей: `pip3 install -r requirements.txt`
 
 Для запуска сайта: `streamlit run app.py`
-
-Для запуска предсказания: `python3 inference.py -h`
 
 ## Структура проекта
 - **app.py** - код сайта
