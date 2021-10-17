@@ -51,10 +51,11 @@ def main():
             all_zip = []
             all_stats = []
             for idx, _paths in enumerate(paths):
+                _paths.sort()
                 stats = []
                 mean_data = np.array([[0, 0, 0], [0, 0, 0]], dtype=np.float64)
 
-                step = 0.25 * len(_paths)
+                step = max(0.02 * len(_paths), 1)
                 # Loading menu
                 name = name_from_filepath(filepaths[idx].name)
 
@@ -103,6 +104,8 @@ def main():
                             # Annotation display
                             pretty_annotation = stw.pretty_annotation(annotation)
                             col2.markdown(pretty_annotation, unsafe_allow_html=True)
+
+                            kol += 1
 
                         info = st.info(f'Делаем предсказания , пожалуйста, подождите')
                     info.empty()
