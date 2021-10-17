@@ -17,7 +17,6 @@ import pandas as pd
 
 def create_dataframe(stats, mean_annotation):
     df = pd.json_normalize(stats)
-    print(stats)
     if isinstance(stats[0]['Оба легких'], dict):
         df.columns = [
             np.array(["ID", "Левое легкое", "", "Правое легкое", " ", "Оба", "  "]),
