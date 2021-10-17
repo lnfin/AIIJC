@@ -84,6 +84,8 @@ def get_predictions(paths, models, transforms, multi_class=True):
     # preparing
     binary_model, multi_model = models
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    binary_model.to(device)
+    multi_model.to(device)
     dataloader = DataLoader(ProductionCovid19Dataset(paths, transform=transforms[0]), batch_size=1, drop_last=False)
 
     # prediction
@@ -106,7 +108,7 @@ def get_predictions(paths, models, transforms, multi_class=True):
                 multi_pred = torch.argmax(multi_pred, 0).float()
                 pred = pred + pred * multi_pred  # ground-glass from binary model and consolidation from second
             orig_img = orig_img.squeeze()
-            yield img.numpy(), orig_img.numpy(), pred.numpy(), lung, img_to_dicom
+            yield img.cpu().numpy(), orig_img.cpu().numpy(), pred.cpu().numpy(), lung, img_to_dicom
 
 
 def make_masks(paths, models, transforms, multi_class=True):
