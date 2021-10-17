@@ -37,11 +37,11 @@ def pretty_annotation(annotation):
     if 'ground_glass' in annotation.keys():
         annotation = f'''
             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>Правое</b>&nbsp;|&nbsp;<b>Левое</b>\n
-            <b>Матовое стекло:&nbsp;</b> {annotation['ground_glass'][0]:.2f}% | {annotation['ground_glass'][1]:.2f}%\n
-            <b>Консолидация:&nbsp;&nbsp;&nbsp;</b> {annotation['consolidation'][0]:.2f}% | {annotation['consolidation'][1]:.2f}%\n
+            <b>Матовое стекло:&nbsp;</b> {annotation['ground_glass'][1]:.2f}% | {annotation['ground_glass'][0]:.2f}%\n
+            <b>Консолидация:&nbsp;&nbsp;&nbsp;</b> {annotation['consolidation'][1]:.2f}% | {annotation['consolidation'][0]:.2f}%\n
                 '''
     else:
         annotation = f'''
             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>Правое</b>&nbsp;|&nbsp;<b>Левое</b>\n
-            <b>Повреждение:&nbsp;</b> {annotation['disease'][0]:.2f}% | {annotation['disease'][1]:.2f}%\n'''
+            <b>Повреждение:&nbsp;</b> {annotation['disease'][1]:.2f}% | {annotation['disease'][0]:.2f}%\n'''
     return annotation

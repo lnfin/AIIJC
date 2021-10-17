@@ -39,6 +39,7 @@ def create_dataframe(stats, mean_annotation):
 
         df[["Левое легкое", "", "Правое легкое", " ", "Оба", "  "]] = df[
             ["Левое легкое", "", "Правое легкое", " ", "Оба", "  "]].round(1).applymap('{:.1f}'.format)
+        
 
     else:
         df.columns = np.array(["ID", "Левое легкое", "Правое легкое", "Оба"])
@@ -55,7 +56,7 @@ def create_dataframe(stats, mean_annotation):
 
         df[["Левое легкое", "Правое легкое", "Оба"]] = df[["Левое легкое", "Правое легкое", "Оба"]].round(
             1).applymap('{:.1f}'.format)
-        
+ 
         
     return df
 
