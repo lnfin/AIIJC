@@ -58,6 +58,8 @@ def main():
                 # Loading menu
                 name = name_from_filepath(filepaths[idx].name)
 
+                nifti = NiftiSaver()
+
                 zip_obj = ZipFile(os.path.join(user_dir, f'{name}.zip'), 'w')
                 all_zip.append(f'{name}.zip')
                 # Display file/patient name
@@ -70,6 +72,8 @@ def main():
                     for idx, data in enumerate(make_masks(_paths, models, transforms, multi_class)):
                         img, orig_img, img_to_dicom, annotation, path, _mean_data = data
                         info.empty()
+
+                        nifti.add(img_to_dicom)
 
                         mean_data += _mean_data
                         img_to_save = img.astype(np.uint8)
@@ -109,6 +113,8 @@ def main():
                     # Save statistics
                     df.to_excel(os.path.join(user_dir, f'{name}.xlsx'))
                     all_stats.append(f'{name}.xlsx')
+                    print('PATH ', user_dir)
+                    nifti.add(os.path.join(user_dir, f'{name}.nii'))
                     # Close zip
                     zip_obj.close()
 

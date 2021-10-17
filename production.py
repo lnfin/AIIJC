@@ -17,12 +17,13 @@ import pandas as pd
 
 def create_dataframe(stats, mean_annotation):
     df = pd.json_normalize(stats)
-    if 'Ground glass' in stats[0]['left lung'].keys():
+    print(stats)
+    if isinstance(stats[0]['Оба легких'], dict):
         df.columns = [
-            np.array(["ID", "left lung", "", "right lung", " ", "both", "  "]),
+            np.array(["ID", "Левое легкое", "", "Правое легкое", " ", "Оба", "  "]),
             np.array(
-                ["", "Ground glass", "Consolidation", "Ground glass", "Consolidation", "Ground glass",
-                 "Consolidation"])
+                ["", "Матовое стекло", "Консолидация", "Матовое стекло", "Консолидация", "Матовое стекло",
+                 "Консолидация"])
         ]
         df = df.append(pd.Series([
             -1,
@@ -36,11 +37,11 @@ def create_dataframe(stats, mean_annotation):
 
         df['ID'] = df['ID'].astype('int32').replace(-1, '3D').astype('str')
 
-        df[["left lung", "", "right lung", " ", "both", "  "]] = df[
-            ["left lung", "", "right lung", " ", "both", "  "]].round(1).applymap('{:.1f}'.format)
+        df[["Левое легкое", "", "Правое легкое", " ", "Оба", "  "]] = df[
+            ["Левое легкое", "", "Правое легкое", " ", "Оба", "  "]].round(1).applymap('{:.1f}'.format)
 
     else:
-        df.columns = np.array(["ID", "left lung", "right lung", "both"])
+        df.columns = np.array(["ID", "Левое легкое", "Правое легкое", "Оба"])
 
         df = df.append(pd.Series([
             -1,
@@ -52,30 +53,30 @@ def create_dataframe(stats, mean_annotation):
 
         df['ID'] = df['ID'].astype('int32').replace(-1, '3D').astype('str')
 
-        df[["left lung", "right lung", "both"]] = df[["left lung", "right lung", "both"]].round(
+        df[["Левое легкое", "Правое легкое", "Оба"]] = df[["Левое легкое", "Правое легкое", "Оба"]].round(
             1).applymap('{:.1f}'.format)
     return df
 
 
 def get_statistic(idx, data):
     stat = {'id': idx + 1}
-    if 'ground_glass' in data.keys():
-        stat['left lung'] = {
-            'Ground glass': data['ground_glass'][0],
-            'Consolidation': data['consolidation'][0]
+    if 'Матовое стекло' in data.keys():
+        stat['Левое легкое'] = {
+            'Матовое стекло': data['ground_glass'][0],
+            'Консолидация': data['consolidation'][0]
         }
-        stat['right lung'] = {
-            'Ground glass': data['ground_glass'][1],
-            'Consolidation': data['consolidation'][1]
+        stat['Правое легкое'] = {
+            'Матовое стекло': data['ground_glass'][1],
+            'Консолидация': data['consolidation'][1]
         }
-        stat['both lungs'] = {
-            'Ground glass': sum(data['ground_glass']),
-            'Consolidation': sum(data['consolidation'])
+        stat['Оба легких'] = {
+            'Матовое стекло': sum(data['ground_glass']),
+            'Консолидация': sum(data['consolidation'])
         }
     else:
-        stat['left lung'] = data['disease'][0]
-        stat['right lung'] = data['disease'][1]
-        stat['both lungs'] = stat['left lung'] + stat['right lung']
+        stat['Левое легкое'] = data['disease'][0]
+        stat['Правое легкое'] = data['disease'][1]
+        stat['Оба легких'] = stat['Левое легкое'] + stat['Правое легкое']
     return stat
 
 
@@ -116,15 +117,8 @@ class NiftiSaver:
 
     def save(self, path):
         slices = np.array(self.slices)
-        slices_better = []
-        for s in slices:
-            rgb = np.zeros((s.shape[0], s.shape[1], 1, 1), [('R', 'u1'), ('G', 'u1'), ('B', 'u1')])
-            for i in range(s.shape[0]):
-                for j in range(s.shape[1]):
-                    rgb[i, j] = tuple(s[i, j, :])
-            slices_better.append(rgb)
-        slices_better = np.array(slices_better)
-        ni_img = nib.Nifti1Image(slices_better, np.eye(4))
+
+        ni_img = nib.Nifti1Image(slices, np.eye(4) * 2)
         nib.save(ni_img, path)
 
 
