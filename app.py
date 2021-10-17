@@ -109,6 +109,7 @@ def main():
 
                         info = st.info(f'Делаем предсказания , пожалуйста, подождите')
                     info.empty()
+                    
                     # Creating dataframe to display and save
                     df = create_dataframe(stats, mean_data)
                     # Display statistics

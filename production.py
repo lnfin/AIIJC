@@ -60,7 +60,7 @@ def create_dataframe(stats, mean_annotation):
 
 def get_statistic(idx, data):
     stat = {'id': idx + 1}
-    if 'Матовое стекло' in data.keys():
+    if 'ground_glass' in data.keys():
         stat['Левое легкое'] = {
             'Матовое стекло': data['ground_glass'][0],
             'Консолидация': data['consolidation'][0]
