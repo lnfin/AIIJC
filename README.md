@@ -36,11 +36,8 @@
   - metrics.py - кастомные метрики
   - models.py - кастомные классы моделей
 - **requirements.txt** - файл зависимостей
-- **checkpoints**
-  - Binary.pth
-  - MultiClass.pth
-  - Lungs.pth
 
-Папку checkpoints скачать [тут](https://drive.google.com/file/d/19svztOBB4RhnW7cwuZTDPZb0EiWKdydN/view?usp=sharing)
 
-[Тренировка](https://drive.google.com/drive/folders/1AawFssvVRtF3lZIr6nOvObcH41Gu4rIE?usp=sharing) происходила на Google Colab Pro
+Папку c весами моделей скачать [тут](https://drive.google.com/drive/folders/1rbbjqClLp1PCjHGqBdXnAopvVtrc4ipL?usp=sharing)
+
+[Тренировка](https://colab.research.google.com/drive/1t-RMsJp1dJuR12D5CHJh2cfQ6gjH-a95?usp=sharing) происходила на Google Colab Pro
